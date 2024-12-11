@@ -2,7 +2,9 @@
 
 # IMVIEW Image Display Function
 
-The MATLAB function `imview` displays a binary, grayscale, or RGB image. It is intended to be used instead of `imshow` in most cases. It has several important differences in behavior:
+The MATLAB function `imview` displays a binary, grayscale, or RGB image. It is intended to be used instead of `imshow` in most cases. It behaves better with other MATLAB graphics functions, and it uses a higher quality image interpolation.
+
+Here are the specific differences between `imview` and `imshow`:
  
 - `imview` does not resize the figure containing the image display. Instead, the image is displayed in the current axes in the current figure without changing the figure or axes size.
 - `imview` displays the image using bilinear interpolation and antialiasing, unless individual pixels are larger than about 0.2 inches. In that case, the interpolation switches automatically to nearest neighbor, and a pixel grid is shown. The function `imshow` uses nearest neighbor interpolation by default.
@@ -31,6 +33,14 @@ The function `imview` requires the following add-ons that are available from the
 ## Installation
 
 Download the `.mltbx` file from the [GitHub repository releases area](https://github.com/eddins/imview/releases/) or from the [File Exchange](https://www.mathworks.com/matlabcentral/fileexchange/placeholder). Double-click on the downloaded file to automatically and run the MATLAB add-on installer. This will copy the files to your MATLAB add-ons area and add the appropriate folder to your MATLAB search path.
+
+After installation, this imview version may be shadowed by a placeholder function in Image Processing Toolbox with the same name. That function only issues an error message. It is a remnant of a general image display tool that existed in the product about 20 years ago. To fix this installation issue:
+
+1. Click "Set Path" in the MATLAB toolstrip. 
+1. Find the path entry for the IMVIEW add-on; it may be near the bottom of the long list. 
+1. Right-click on the path entry and select "Move to top." 
+1. Check the box that says "Save path for future sessions."
+1. Click "Apply."
 
 Later, you can use the [MATLAB Add-On Manager](https://www.mathworks.com/help/matlab/matlab_env/get-add-ons.html) to uninstall.
 
