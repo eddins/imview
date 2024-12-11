@@ -8,7 +8,7 @@ function opts = toolboxOptions
 
     opts = matlab.addons.toolbox.ToolboxOptions(toolbox_folder,identifier);
 
-    opts.ToolboxName = "imview Toolbox";
+    opts.ToolboxName = "IMVIEW Image Display Function";
 
     % Version number of the toolbox. Use semantic version numbers of the
     % form MAJOR.MINOR.PATCH, such as "2.0.1". Increment the MAJOR version
@@ -37,7 +37,7 @@ function opts = toolboxOptions
     % .mltbx extension, MATLAB appends the extension automatically when it
     % creates the file.
 
-    opts.OutputFile = fullfile("release","imview Toolbox");
+    opts.OutputFile = fullfile("release","imview toolbox");
     
     % Latest MATLAB release that the toolbox is compatible with, specified
     % as a string using the format RXXXXx, for example, "R2023a". If there
@@ -51,7 +51,7 @@ function opts = toolboxOptions
     % If there is no minimum restriction, specify MinimumMatlabRelease as
     % empty ("").
 
-    opts.MinimumMatlabRelease = "";
+    opts.MinimumMatlabRelease = "R2019b";
 
     % Supported platforms
 
@@ -61,11 +61,18 @@ function opts = toolboxOptions
     platforms.MatlabOnline = true;
     opts.SupportedPlatforms = platforms; 
 
-    % opts.Description = 
+    opts.Description = [ ...
+        "The MATLAB function imview displays binary, grayscale, and " ...
+        "RGB images. It is intended to replace imshow in most cases."];
 
-    % opts.Summary = 
+    opts.Summary = [ ...
+        "The MATLAB function imview displays binary, grayscale, and " ...
+        "RGB images. It is intended to replace imshow in most cases. " ...
+        "It behaves better with other MATLAB graphics functions, " ...
+        "and it uses a higher quality interpolation that automatically " ...
+        "changes based on the image zoom level."];
 
-    % opts.AuthorName = 
+    opts.AuthorName = "Steve Eddins";
 
     % opts.AuthorEmail =
 
@@ -74,7 +81,7 @@ function opts = toolboxOptions
     % Path to the toolbox image file. Can be specified as a relative or
     % absolute path.
     %
-    % opts.ToolboxImageFile = 
+    opts.ToolboxImageFile = "./images/imview-horn.jpeg";
 
     % Files to be packaged in the toolbox, string vector. By default,
     % ToolboxFiles contains the list of all files in toolboxFolder.
