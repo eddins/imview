@@ -1,4 +1,4 @@
-[![View IMVIEW Image Display Function on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/placeholder) [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=eddins/imview&file=toolbox/gettingStarted.mlx)
+[![View IMVIEW Image Display Function on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/177319-imview-image-display-function) [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=eddins/imview&file=toolbox/gettingStarted.mlx)
 
 # IMVIEW Image Display Function
 
@@ -46,6 +46,6 @@ Later, you can use the [MATLAB Add-On Manager](https://www.mathworks.com/help/ma
 
 ## Getting Started
 
-See the [Getting Started](https://placeholder) script for more information.
+See the [Getting Started](https://viewer.mathworks.com/?viewer=live_code&url=https%3A%2F%2Fwww.mathworks.com%2Fmatlabcentral%2Fmlc-downloads%2Fdownloads%2Fb2565ebf-4819-4e5a-8c49-f6a32f92a051%2F1733961676%2Ffiles%2FgettingStarted.mlx&embed=web) script for more information.
 
 Copyright &copy; 2024 Steven L. Eddins
