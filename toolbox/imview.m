@@ -67,7 +67,7 @@ function out = imview(A)
     verifyDependencies();
 
     ax = newplot;
-    im = image(CData = A, Parent = ax);
+    im = image(CData = A, Parent = ax, Interpolation = "bilinear");
 
     M = size(A,1);
     N = size(A,2);
