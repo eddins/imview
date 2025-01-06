@@ -28,6 +28,12 @@ classdef imview_test < imview_test_setup
             test_case.verifyEqual(test_case.Axes.CLim,[0 1]);
         end
 
+        function indexedImage(test_case)
+            im = imview([1 2 3], gray(3), Parent = test_case.Axes);
+
+            test_case.verifyEqual(im.CDataMapping,'direct');
+        end
+
         function uint8GrayImage(test_case)
             imview(uint8([0 1 0; 1 0 1; 0 1 0]), ...
                 Parent = test_case.Axes);

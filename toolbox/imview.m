@@ -6,8 +6,13 @@
 %   represented as a numeric matrix. An RGB image is represented as an
 %   MxNx3 array with type double, single, uint8, or uint16.
 %
-%   IMVIEW(A,Name=Value) uses name-value arguments to control aspects of
+%   IMVIEW(A,map) displays the input image, A, and the specified colormap,
+%   map, as an indexed image.
+%
+%   IMVIEW(___,Name=Value) uses name-value arguments to control aspects of
 %   the image display.
+%
+%   IM = IMVIEW(___) returns the matlab.graphics.primitive.Image object.
 %
 %   NAME-VALUE ARGUMENTS
 %
@@ -77,7 +82,6 @@
 %   - Overriding the default XData and YData
 %   - Setting the initial magnification level (although you can use
 %     setImageZoomLevel or zoomImage after calling imview)
-%   - Displaying an indexed image
 %   - Using an image filename or URL
 %
 %   REQUIRED ADD-ONS
@@ -111,16 +115,21 @@ function out = imview(A,map,options)
 
     M = size(A,1);
     N = size(A,2);
-    P = size(A,3);
 
     im.XData = [1 N];
     im.YData = [1 M];
 
-    treat_as_rgb = (P == 3);
-    if ~treat_as_rgb
-        im.CDataMapping = "scaled";
-        ax.CLim = options_p.GrayLimits;
-        ax.Colormap = gray(256);
+    switch type
+        case "grayscale"
+            im.CDataMapping = "scaled";
+            ax.CLim = options_p.GrayLimits;
+            ax.Colormap = gray(256);
+        case "indexed"
+            im.CDataMapping = "direct";
+            ax.Colormap = map;
+        case "logical"
+            im.CDataMapping = "scaled";
+            ax.Colormap = [0 0 0; 1 1 1];
     end
 
     ax.DataAspectRatio = [1 1 1];
