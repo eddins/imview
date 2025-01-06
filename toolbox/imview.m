@@ -6,6 +6,42 @@
 %   represented as a numeric matrix. An RGB image is represented as an
 %   MxNx3 array with type double, single, uint8, or uint16.
 %
+%   IMVIEW(A,Name=Value) uses name-value arguments to control aspects of
+%   the image display.
+%
+%   NAME-VALUE ARGUMENTS
+%
+%   Specify optional pairs of arguments as Name1=Value1,...,NameN=ValueN,
+%   where Name is the argument name and Value is the corresponding value.
+%   Name-value arguments must appear after other arguments.
+%
+%   GrayLimits - Gray limits used for displaying the image
+%       Default: "typerange"
+%
+%       Specified as a two-element vector of the form [LOW HIGH]. The
+%       function displays the value LOW (and any value less than LOW) as
+%       black, and it displays the value HIGH (and any value greater than
+%       HIGH) as white. Values between LOW and HIGH are displayed as
+%       intermediate shades of gray.
+%
+%       Alternatively, GrayLimits can be specified as "datarange", which
+%       automatically sets LOW and HIGH to be the minimum and maximum
+%       values of A, respectively. Or, GrayLimits can be specified as
+%       "typerange", which sets LOW and HIGH based on the data type of A.
+%       If A's type is double or single, then the limits are set to [0 1].
+%       If A is an integer type, then LOW and HIGH are set to the minimum
+%       and maximum representable values of that type.
+%
+%       The GrayLimits values are ignored if A is an RGB image (an MxNx3
+%       array).
+%
+%   Parent - Parent axes of image object
+%       Default: the axes used by the graphics system by default for the 
+%       next plot, as returned by newplot
+%
+%       Parent axes of image object, specified as an Axes object or a
+%       UIAxes object. 
+%
 %   COMPARISON WITH IMSHOW
 %
 %   The function IMVIEW is intended to be used instead of imshow for many
@@ -37,12 +73,10 @@
 %   The function IMVIEW is under development. This version does not yet
 %   have some of the options supported by imshow, including:
 %
-%   - Overriding the default black-white range
 %   - Overriding the default interpolation behavior
 %   - Overriding the default XData and YData
 %   - Setting the initial magnification level (although you can use
 %     setImageZoomLevel or zoomImage after calling imview)
-%   - Specifying the parent axes
 %   - Displaying an indexed image
 %   - Using an image filename or URL
 %
@@ -59,14 +93,20 @@
 %
 %   See also imshow, image, pixelgrid, setImageZoomLevel, zoomImage
 
-function out = imview(A)
+function out = imview(A,map,options)
     arguments
         A
+        map (:,3) double {mustBeReal, mustBeInRange(map,0,1)} = []
+        options.GrayLimits {mustBeValidGrayLimits}
+        options.Parent (1,1) {mustBeValidParentAxes} = newplot
     end
 
     verifyDependencies();
+    A = processA(A);
+    type = imageType(A,map);
+    options_p = processOptions(options,A,type);
 
-    ax = newplot;
+    ax = options.Parent;
     im = image(CData = A, Parent = ax, Interpolation = "bilinear");
 
     M = size(A,1);
@@ -79,7 +119,7 @@ function out = imview(A)
     treat_as_rgb = (P == 3);
     if ~treat_as_rgb
         im.CDataMapping = "scaled";
-        ax.CLim = getrangefromclass(A);
+        ax.CLim = options_p.GrayLimits;
         ax.Colormap = gray(256);
     end
 
@@ -127,6 +167,27 @@ function updateImageDisplayMethod(im)
     end
 end
 
+function type = imageType(A,map)
+    if ((ndims(A) == 3) && (size(A,3) == 3))
+        type = "truecolor";
+        if ~isempty(map)
+            id = "imview:MapIgnoredForTruecolorImage";
+            message = ...
+                "Input colormap ignored for a truecolor image.";
+            warning(id,message)
+        end
+    elseif ~isempty(map)
+        type = "indexed";
+    elseif islogical(A)
+        type = "binary";
+    else
+        type = "grayscale";
+    end
+end
+
+function A = processA(A)
+end
+
 function verifyDependencies
     if ~mFunctionExists("pixelgrid")
         error("imview:NeedPixelGrid", ...
@@ -147,4 +208,72 @@ function tf = mFunctionExists(function_name)
     tf = (string(name) == function_name) && (ext == ".m");
 end
 
-% Copyright 2024 Steven L. Eddins
+function mustBeValidGrayLimits(gray_limits)
+    if isnumeric(gray_limits)
+        valid = (numel(gray_limits) == 2) && ...
+            allfinite(gray_limits)        && ...
+            isreal(gray_limits)           && ...
+            gray_limits(2) > gray_limits(1);
+
+    elseif (isstring(gray_limits) || ischar(gray_limits))
+        gray_limits = lower(string(gray_limits));
+        valid = ismember(gray_limits,["datarange" "typerange"]);
+
+    else
+        valid = false;
+    end
+
+    if ~valid
+        message = ...
+            "Specify either: a 2-element, real, " + ...
+            "finite vector, with the second element greater than " + ...
+            "the first; or one of the strings " + ...
+            """datarange"" or ""typerange"".";
+        id = "imview:InvalidGrayLimits";
+        error(id,message)
+    end
+end
+
+function mustBeValidParentAxes(ax)
+    if ~(isa(ax, "matlab.graphics.axis.Axes") || ...
+            isa(ax, "matlab.ui.control.UIAxes"))
+        id = "imview:InvalidParent";
+        message = "Parent must be an Axes or UIAxes object.";
+        error(id,message)
+    end
+end
+
+function options_p = processOptions(options,A,~)
+    options_p = options;
+    options_p.GrayLimits = processGrayLimits(options,A);
+end
+
+function gray_limits_p = processGrayLimits(options,A)
+    if isfield(options,"GrayLimits")
+        if isnumeric(options.GrayLimits)
+            gray_limits_p = double(reshape(options.GrayLimits,1,2));
+        else
+            switch options.GrayLimits
+                case "datarange"
+                    [gray_limits_p(1), gray_limits_p(2)] = bounds(A,"all");
+                    if (gray_limits_p(2) == gray_limits_p(1))
+                        % Degenerate case of constant-valued image. The
+                        % axes object will throw an error if you try to set
+                        % CLim with two values that are the same. Make an
+                        % arbitrary choice here that causes image to be
+                        % displayed as an intermediate shade of gray.
+                        delta = max(0.5,2*eps(gray_limits_p(1)));
+                        gray_limits_p = gray_limits_p + [-delta delta];
+                    end
+                case "typerange"
+                    gray_limits_p = getrangefromclass(A);
+                otherwise
+            end
+        end
+    else
+        % Default to "typerange"
+        gray_limits_p = getrangefromclass(A);
+    end
+end
+
+% Copyright 2024-2025 Steven L. Eddins
