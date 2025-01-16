@@ -101,7 +101,10 @@ function out = imview(A,map,options)
     arguments
         A
         map (:,3) double {mustBeReal, mustBeInRange(map,0,1)} = []
+        options.XData {mustBeValidXYData}
+        options.YData {mustBeValidXYData}
         options.GrayLimits {mustBeValidGrayLimits}
+        options.Interpolation (1,1) imvw.internal.ImviewInterpolationChoice = "adaptive"
         options.Parent (1,1) {mustBeValidParentAxes} = newplot
     end
 
@@ -110,14 +113,11 @@ function out = imview(A,map,options)
     type = imageType(A,map);
     options_p = processOptions(options,A,type);
 
-    ax = options.Parent;
+    ax = options_p.Parent;
     im = image(CData = A, Parent = ax, Interpolation = "bilinear");
 
-    M = size(A,1);
-    N = size(A,2);
-
-    im.XData = [1 N];
-    im.YData = [1 M];
+    im.XData = options_p.XData;
+    im.YData = options_p.YData;
 
     switch type
         case "grayscale"
@@ -142,12 +142,19 @@ function out = imview(A,map,options)
 
     pixelgrid(im)
 
-    % See the article "Undocumented HG2 graphics events" for an explanation
-    % of the following code.
-    %
-    % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
-    addlistener(im,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
-    addlistener(ax,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
+    switch options_p.Interpolation
+        case "nearest"
+            im.Interpolation = "nearest";
+        case "bilinear"
+            im.Interpolation = "bilinear";
+        case "adaptive"
+            % See the article "Undocumented HG2 graphics events" for an explanation
+            % of the following code.
+            %
+            % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
+            addlistener(im,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
+            addlistener(ax,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
+    end
 
     if nargout > 0
         out = im;
@@ -217,6 +224,12 @@ function tf = mFunctionExists(function_name)
     tf = (string(name) == function_name) && (ext == ".m");
 end
 
+function mustBeValidXYData(data)
+    arguments
+        data (1,2) double {mustBeReal mustBeFinite} %#ok<INUSA>
+    end
+end
+
 function mustBeValidGrayLimits(gray_limits)
     if isnumeric(gray_limits)
         valid = (numel(gray_limits) == 2) && ...
@@ -252,9 +265,38 @@ function mustBeValidParentAxes(ax)
     end
 end
 
-function options_p = processOptions(options,A,~)
+function options_p = processOptions(options,A,type)
     options_p = options;
     options_p.GrayLimits = processGrayLimits(options,A);
+    options_p.XData = processXData(options,A);
+    options_p.YData = processYData(options,A);
+    options_p.Interpolation = processInterpolation(options,type);
+end
+
+function interp = processInterpolation(options,type)
+    if isfield(options,"Interpolation")
+        interp = options.Interpolation;
+    elseif type == "indexed"
+        interp = "nearest";
+    else
+        interp = "adaptive";
+    end
+end
+
+function xdata = processXData(options,A)
+    if isfield(options,"XData")
+        xdata = options.XData;
+    else
+        xdata = [1 size(A,2)];
+    end
+end
+
+function ydata = processYData(options,A)
+    if isfield(options,"YData")
+        ydata = options.YData;
+    else
+        ydata = [1 size(A,1)];
+    end
 end
 
 function gray_limits_p = processGrayLimits(options,A)
