@@ -47,6 +47,18 @@
 %       Parent axes of image object, specified as an Axes object or a
 %       UIAxes object. 
 %
+%   XData - Placement along the x-axis
+%       Two-element vector setting the XData property of the created image
+%       object. See the documentation for image properties.
+%
+%       Default: [1 size(A,2)]
+%
+%   YData - Placement along the y-axis
+%       Two-element vector setting the YData property of the created image
+%       object. See the documentation for image properties.
+%
+%       Default: [1 size(A,1)]
+%
 %   COMPARISON WITH IMSHOW
 %
 %   The function IMVIEW is intended to be used instead of imshow for many
