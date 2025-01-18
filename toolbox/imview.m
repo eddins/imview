@@ -123,16 +123,19 @@ function out = imview(A,map,options)
         options.YData {mustBeValidXYData}
         options.GrayLimits {mustBeValidGrayLimits}
         options.Interpolation (1,1) imvw.internal.ImviewInterpolationChoice = "adaptive"
+        options.AlphaData {mustBeNumericOrLogical, mustBeMatrix, ...
+            mustBeInRange(options.AlphaData,0,1)} = 1
         options.Parent (1,1) {mustBeValidParentAxes}
     end
 
     verifyDependencies();
-    A = processA(A);
+    [A,map] = processImageData(A,map);
     type = imageType(A,map);
     options_p = processOptions(options,A,type);
 
     ax = options_p.Parent;
-    im = image(CData = A, Parent = ax, Interpolation = "bilinear");
+    im = image(CData = A, Parent = ax, Interpolation = "bilinear", ...
+        AlphaData = options.AlphaData);
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
@@ -145,7 +148,7 @@ function out = imview(A,map,options)
         case "indexed"
             im.CDataMapping = "direct";
             ax.Colormap = map;
-        case "logical"
+        case "binary"
             im.CDataMapping = "scaled";
             ax.Colormap = [0 0 0; 1 1 1];
     end
@@ -219,7 +222,7 @@ function type = imageType(A,map)
     end
 end
 
-function A = processA(A)
+function [A,map] = processImageData(A,map)
     if ischar(A) || isstring(A)
         A = string(A);
         if ~exist(A,"file")
@@ -228,7 +231,7 @@ function A = processA(A)
             error(id, message, A)
         end
         try
-            A = imread(A);
+            [A,map] = imread(A);
         catch
             id = "imview:FileReadFailed";
             message = "Could not read image from the specified file: ""%s"".";
@@ -305,6 +308,7 @@ function options_p = processOptions(options,A,type)
     options_p.YData = processYData(options,A);
     options_p.Interpolation = processInterpolation(options,type);
     options_p.Parent = processParent(options);
+    options_p.AlphaData = options.AlphaData;
 end
 
 function parent = processParent(options)
