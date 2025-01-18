@@ -9,6 +9,12 @@
 %   IMVIEW(A,map) displays the input image, A, and the specified colormap,
 %   map, as an indexed image.
 %
+%   IMVIEW(filename) displays the image contained in the specified
+%   file, for image file types supported by IMREAD.
+%
+%   IMVIEW(URL) displays the image contained in the file downloaded from
+%   the specified URL, for image file types supported by IMREAD.
+%
 %   IMVIEW(___,Name=Value) uses name-value arguments to control aspects of
 %   the image display.
 %
@@ -117,7 +123,7 @@ function out = imview(A,map,options)
         options.YData {mustBeValidXYData}
         options.GrayLimits {mustBeValidGrayLimits}
         options.Interpolation (1,1) imvw.internal.ImviewInterpolationChoice = "adaptive"
-        options.Parent (1,1) {mustBeValidParentAxes} = newplot
+        options.Parent (1,1) {mustBeValidParentAxes}
     end
 
     verifyDependencies();
@@ -214,6 +220,21 @@ function type = imageType(A,map)
 end
 
 function A = processA(A)
+    if ischar(A) || isstring(A)
+        A = string(A);
+        if ~exist(A,"file")
+            id = "imview:NoSuchFile";
+            message = "Cannot find the specified file: ""%s"".";
+            error(id, message, A)
+        end
+        try
+            A = imread(A);
+        catch
+            id = "imview:FileReadFailed";
+            message = "Could not read image from the specified file: ""%s"".";
+            error(id, message, A)
+        end
+    end
 end
 
 function verifyDependencies
@@ -283,6 +304,15 @@ function options_p = processOptions(options,A,type)
     options_p.XData = processXData(options,A);
     options_p.YData = processYData(options,A);
     options_p.Interpolation = processInterpolation(options,type);
+    options_p.Parent = processParent(options);
+end
+
+function parent = processParent(options)
+    if isfield(options, "Parent")
+        parent = options.Parent;
+    else
+        parent = newplot;
+    end
 end
 
 function interp = processInterpolation(options,type)
