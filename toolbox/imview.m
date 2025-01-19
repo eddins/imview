@@ -65,6 +65,11 @@
 %
 %       Default: [1 size(A,1)]
 %
+%   ShowZoomLevel - Show the zoom level on the image
+%       True or false.
+%
+%       Default: imview.ShowZoomLevel setting
+%
 %   COMPARISON WITH IMSHOW
 %
 %   The function IMVIEW is intended to be used instead of imshow for many
