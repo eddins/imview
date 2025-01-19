@@ -129,6 +129,7 @@ function out = imview(A,map,options)
             mustBeInRange(options.AlphaData,0,1)} = 1
         options.Parent (1,1) {mustBeValidParentAxes}
         options.ShowZoomLevel (1,1) logical
+        options.SpatialReference (1,1) imref2d
     end
 
     verifyDependencies();
@@ -179,6 +180,8 @@ function out = imview(A,map,options)
             addlistener(im,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
             addlistener(ax,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
     end
+
+    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
 
     if nargout > 0
         out = im;
@@ -468,16 +471,30 @@ function interp = processInterpolation(options,type)
 end
 
 function xdata = processXData(options,A)
-    if isfield(options,"XData")
+    if isfield(options, "SpatialReference")
+        % If SpatialReference and XData are both specified,
+        % SpatialReference takes precedence.
+        ref = options.SpatialReference;
+        xdata = ref.XWorldLimits + ref.PixelExtentInWorldX * [0.5 -0.5];
+
+    elseif isfield(options,"XData")
         xdata = options.XData;
+
     else
         xdata = [1 size(A,2)];
     end
 end
 
 function ydata = processYData(options,A)
-    if isfield(options,"YData")
+    if isfield(options, "SpatialReference")
+        % If SpatialReference and YData are both specified,
+        % SpatialReference takes precedence.
+        ref = options.SpatialReference;
+        ydata = ref.YWorldLimits + ref.PixelExtentInWorldY * [0.5 -0.5]; 
+
+    elseif isfield(options,"YData")
         ydata = options.YData;
+        
     else
         ydata = [1 size(A,1)];
     end
@@ -526,6 +543,51 @@ function tf = showZoomLevelSetting
     zoom_setting = g.ShowZoomLevel;
 
     tf = zoom_setting.ActiveValue;
+end
+
+function addShowZoomLevelToolbarButton(ax, initial_value)
+    tb_old = ax.Toolbar;
+    if ~isempty(findobj(tb_old, "Tag", "ShowZoomLevelButton"))
+        return
+    end
+
+    btns = tb_old.Children;
+    if isempty(btns)
+        tb = axtoolbar(ax, "default");
+    else
+        tb = axtoolbar(ax);
+        btns(k).Parent = tb;
+    end
+
+    if initial_value
+        tooltip = "Hide zoom-level display";
+    else
+        tooltip = "Show zoom-level display";
+    end
+
+    axtoolbarbtn(tb, "state", ...
+        Icon = "imview_show_zoom_level_icon.png", ...
+        Value = initial_value, ...
+        Tooltip = tooltip, ...
+        Tag = "ShowZoomLevelButton", ...
+        ValueChangedFcn = @handleZoomLevelToolbarValueChange );
+end
+
+function handleZoomLevelToolbarValueChange(btn,event)
+    tb = btn.Parent;
+    ax = tb.Parent;
+    txt = findobj(ax, "Tag", "MagnificationText");
+    if isempty(txt)
+        return
+    end
+
+    if event.Value
+        txt.Visible = "on";
+        btn.Tooltip = "Hide zoom-level display";
+    else
+        txt.Visible = "off";
+        btn.Tooltip = "Show zoom-level display";
+    end
 end
 
 % Copyright 2024-2025 Steven L. Eddins
