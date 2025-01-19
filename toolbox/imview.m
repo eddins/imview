@@ -129,7 +129,7 @@ function out = imview(A,map,options)
     end
 
     verifyDependencies();
-    [A,map] = processImageData(A,map);
+    [A,map,options.AlphaData] = processImageData(A,map,options.AlphaData);
     type = imageType(A,map);
     options_p = processOptions(options,A,type);
 
@@ -222,7 +222,7 @@ function type = imageType(A,map)
     end
 end
 
-function [A,map] = processImageData(A,map)
+function [A,map,alpha] = processImageData(A,map,alpha)
     if ischar(A) || isstring(A)
         A = string(A);
         if ~exist(A,"file")
@@ -231,7 +231,12 @@ function [A,map] = processImageData(A,map)
             error(id, message, A)
         end
         try
-            [A,map] = imread(A);
+            [A,map,alpha] = imread(A);
+            if isa(alpha, "uint8")
+                alpha = double(alpha)/255;
+            elseif isa(alpha, "uint16")
+                alpha = double(alpha)/65535;
+            end
         catch
             id = "imview:FileReadFailed";
             message = "Could not read image from the specified file: ""%s"".";
