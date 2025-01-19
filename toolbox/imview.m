@@ -96,11 +96,8 @@
 %   The function IMVIEW is under development. This version does not yet
 %   have some of the options supported by imshow, including:
 %
-%   - Overriding the default interpolation behavior
-%   - Overriding the default XData and YData
 %   - Setting the initial magnification level (although you can use
 %     setImageZoomLevel or zoomImage after calling imview)
-%   - Using an image filename or URL
 %
 %   REQUIRED ADD-ONS
 %
@@ -126,6 +123,7 @@ function out = imview(A,map,options)
         options.AlphaData {mustBeNumericOrLogical, mustBeMatrix, ...
             mustBeInRange(options.AlphaData,0,1)} = 1
         options.Parent (1,1) {mustBeValidParentAxes}
+        options.ShowZoomLevel (1,1) logical
     end
 
     verifyDependencies();
@@ -135,7 +133,7 @@ function out = imview(A,map,options)
 
     ax = options_p.Parent;
     im = image(CData = A, Parent = ax, Interpolation = "bilinear", ...
-        AlphaData = options.AlphaData);
+        AlphaData = options_p.AlphaData);
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
@@ -173,8 +171,8 @@ function out = imview(A,map,options)
             % of the following code.
             %
             % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
-            addlistener(im,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
-            addlistener(ax,"MarkedClean",@(~,~) updateImageDisplayMethod(im));
+            addlistener(im,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
+            addlistener(ax,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
     end
 
     if nargout > 0
@@ -182,7 +180,7 @@ function out = imview(A,map,options)
     end
 end
 
-function updateImageDisplayMethod(im)
+function updateImageDisplay(im, show_zoom_level)
     if ~ishandle(im)
         return
     end
@@ -202,6 +200,119 @@ function updateImageDisplayMethod(im)
             end
         end
     end
+
+    updateMagnificationText(im,show_zoom_level)
+end
+
+function t = createMagnificationText(im,show_zoom_level)
+    s = struct("Image", im, "PostSetListener", []);
+    t = text(1,1,"", ...
+         BackgroundColor = uint8([200 200 200 200]), ...
+         Color = "black", ...
+         FontSize = 10, ...
+         HorizontalAlignment = "right", ...
+         VerticalAlignment = "bottom", ...
+         Margin = 1, ...
+         ButtonDownFcn = @handleMagnificationTextClick, ...
+         Visible = show_zoom_level, ...
+         Tag = "MagnificationText", ...
+         UserData = s, ...
+         Parent = imageAxes(im));
+end
+
+function handleMagnificationTextClick(t,~)
+    t.UserData.PostSetListener = addlistener(t, "String", "PostSet", ...
+        @handleMagnificationTextEdit);
+    t.Editing = "on";
+end
+
+function handleMagnificationTextEdit(~,prop_event)
+    t = prop_event.AffectedObject;
+    delete(t.UserData.PostSetListener);
+    t.UserData.PostSetListener = [];
+    im = t.UserData.Image;
+    if ~isgraphics(im)
+        t.String = "";
+    else
+        mag = magnificationFromString(t.String);
+        if isempty(mag)
+            % Invalid text field entry from user.
+            mag = getImageZoomLevel(im);
+        else
+            setImageZoomLevel(mag,im)
+        end
+        t.String = magnificationTextString(mag);
+    end
+end
+
+function mag = magnificationFromString(s)
+    s = replace(s, "%", "");
+    mag = sscanf(s, "%f");
+    valid_mag = (numel(mag) >= 1) && ...
+        (numel(mag) <= 2) && ...
+        isreal(mag) && ...
+        all(isfinite(mag)) && ...
+        all(mag > 0);
+
+    if ~valid_mag
+        mag = [];
+    end
+end
+
+function updateMagnificationText(im,show_zoom_level)
+    t = findMagnificationText(im);
+    if isempty(t)
+        t = createMagnificationText(im,show_zoom_level);
+    end
+    updateMagnificationTextPosition(t,im);
+    t.String = magnificationTextString(getImageZoomLevel(im));
+end
+
+function s = magnificationTextString(mag)
+    mag = round(mag);
+    if isscalar(mag) || (mag(1) == mag(2))
+        s = sprintf(" %d%% ", mag(1));
+    else
+        s = " " + sprintf("%d%% ", mag);
+    end
+end
+
+function t = findMagnificationText(im)
+    ax = imageAxes(im);
+    t = findobj(ax,"Tag","MagnificationText");
+    if ~isempty(t)
+        t = t(1);
+    end
+end
+
+function updateMagnificationTextPosition(t,im)
+    ax = imageAxes(im);
+    xdata = im.XData;
+    ydata = im.YData;
+    M = size(im.CData,1);
+    N = size(im.CData,2);
+    if (M == 1)
+        pixel_width = 1;
+    else
+        pixel_width = (xdata(end) - xdata(1))/(N - 1);
+    end
+    if (N == 1)
+        pixel_height = 1;
+    else
+        pixel_height = (ydata(end) - ydata(1))/(M - 1);
+    end
+    x = xdata(end) + pixel_width/2;
+    x = min(x,ax.XLim(2));
+    y = ydata(end) + pixel_height/2;
+    y = min(y,ax.YLim(2));
+    t.Position(1:2) = [x y];
+end
+
+function ax = imageAxes(im)
+    ax = ancestor(im, "axes");
+    if isempty(ax)
+        ax = ancestor(im, "uiaxes");
+    end    
 end
 
 function type = imageType(A,map)
@@ -313,7 +424,24 @@ function options_p = processOptions(options,A,type)
     options_p.YData = processYData(options,A);
     options_p.Interpolation = processInterpolation(options,type);
     options_p.Parent = processParent(options);
-    options_p.AlphaData = options.AlphaData;
+    options_p.AlphaData = processAlphaData(options);
+    options_p.ShowZoomLevel = processShowZoomLevel(options);
+end
+
+function show = processShowZoomLevel(options)
+    if isfield(options, "ShowZoomLevel")
+        show = options.ShowZoomLevel;
+    else
+        show = showZoomLevelSetting();
+    end
+end
+
+function alpha_data_p = processAlphaData(options)
+    if isempty(options.AlphaData)
+        alpha_data_p = 1;
+    else
+        alpha_data_p = options.AlphaData;
+    end
 end
 
 function parent = processParent(options)
@@ -376,6 +504,23 @@ function gray_limits_p = processGrayLimits(options,A)
         % Default to "typerange"
         gray_limits_p = getrangefromclass(A);
     end
+end
+
+function tf = showZoomLevelSetting
+    s = settings;
+    if ~hasGroup(s,"imview")
+        s.addGroup(s,"imview")
+    end
+
+    g = s.imview;
+
+    if ~g.hasSetting("ShowZoomLevel")
+        g.addSetting("ShowZoomLevel", PersonalValue = true);
+    end
+
+    zoom_setting = g.ShowZoomLevel;
+
+    tf = zoom_setting.ActiveValue;
 end
 
 % Copyright 2024-2025 Steven L. Eddins
