@@ -65,6 +65,10 @@
 %
 %       Default: [1 size(A,1)]
 %
+%   SpatialReference - 2-D spatial reference
+%       2-D spatial reference of the input image, specified as an imref2d
+%       object.
+%
 %   ShowZoomLevel - Show the zoom level on the image
 %       True or false.
 %
@@ -103,6 +107,9 @@
 %
 %   - Setting the initial magnification level (although you can use
 %     setImageZoomLevel or zoomImage after calling imview)
+%
+%   TODO using imview directly in the Editor (interpolation mode switching,
+%   zoom display in the wrong place)
 %
 %   REQUIRED ADD-ONS
 %
@@ -494,7 +501,7 @@ function ydata = processYData(options,A)
 
     elseif isfield(options,"YData")
         ydata = options.YData;
-        
+
     else
         ydata = [1 size(A,1)];
     end

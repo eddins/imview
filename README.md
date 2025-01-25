@@ -48,4 +48,30 @@ Later, you can use the [MATLAB Add-On Manager](https://www.mathworks.com/help/ma
 
 See the [Getting Started](https://viewer.mathworks.com/?viewer=live_code&url=https%3A%2F%2Fwww.mathworks.com%2Fmatlabcentral%2Fmlc-downloads%2Fdownloads%2Fb2565ebf-4819-4e5a-8c49-f6a32f92a051%2F1733961676%2Ffiles%2FgettingStarted.mlx&embed=web) script for more information.
 
+## Image Credits
+
+### Margaret D. Foster.jpg
+
+Created / published October 4, 1919
+
+Prints & Photographs Online Catalog (Library of Congress)
+
+LCCN Permalink: https://lccn.loc.gov/2016827164
+
+Rights: No known restrictions on publication. For more information, see National Photo Company Collection - Rights and Restrictions Information https://www.loc.gov/rr/print/res/275_npco.html
+
+TIFF file downloaded from https://www.loc.gov/resource/npcc.00520/ on 20-Jan-2025 and converted to JPEG using Mac Preview app.
+
+### Capitol Building Stained Glass.jpg
+
+Created / published February 21, 2021, Carol M. Highsmith, photographer
+
+Prints & Photographs Online Catalog (Library of Congress), gift of photographer
+
+LCCN Permalink: https://lccn.loc.gov/2021755860
+
+Rights: No known restrictions on publication.
+
+432.9 MB TIFF file downloaded from https://www.loc.gov/resource/highsm.67639/ on 20-Jan-2025, converted to JPEG and reduced to 3550x2662 by Mac Preview app.
+
 Copyright &copy; 2024 Steven L. Eddins
