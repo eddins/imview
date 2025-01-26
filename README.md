@@ -2,26 +2,59 @@
 
 # IMVIEW Image Display Function
 
-The MATLAB function `imview` displays a binary, grayscale, or RGB image. It is intended to be used instead of `imshow` in most cases. It behaves better with other MATLAB graphics functions, and it uses a higher quality image interpolation.
+The MATLAB function `imview` displays a binary, grayscale, indexed, or RGB image. It is intended to be used instead of `imshow` in most cases. It behaves better with other MATLAB graphics functions, it uses a higher quality image interpolation, and it displays and makes it easy to change the zoom level.
 
-Here are the specific differences between `imview` and `imshow`:
- 
-- `imview` does not resize the figure containing the image display. Instead, the image is displayed in the current axes in the current figure without changing the figure or axes size.
-- `imview` displays the image using bilinear interpolation and antialiasing, unless individual pixels are larger than about 0.2 inches. In that case, the interpolation switches automatically to nearest neighbor, and a pixel grid is shown. The function `imshow` uses nearest neighbor interpolation by default.
- - Unlike `imshow`, `imview` does not explicitly set the axes `XLim` and `YLim` properties. Instead, it sets the `XLimitMethod` and `YLimitMethod` properties to `"tight"`. With this choice, the axes limits will tightly enclose the data contained by the axes, including the image and anything else that might also be plotted in the same axes. Also unlike `imshow`, the axes limits will continue to automatically adjust to additional data being plotted there.
- - `imview` does not observe the MATLAB Image Display Preferences.
- 
+## Comparing `imview` and `imshow`
+
+The function `imview` differs from `imshow` in several important ways:
+
+- `imview` does not resize the figure containing the image display.
+Instead, the image is displayed in the current axes in the current
+figure.
+
+- `imview` displays the image using bilinear interpolation and
+antialiasing, unless individual pixels are larger than about 0.2
+inches. In that case, the interpolation switches automatically to
+nearest neighbor, and a pixel grid is shown. The function `imshow` uses
+nearest neighbor interpolation by default.
+
+- `imview` displays the current zoom level at the lower
+right of the image. The zoom level can be changed directly by clicking
+on the zoom level display and editing it. There are several ways to turn off this display
+if desired.
+
+- Unlike `imshow`, `imview` does not explicitly set the axes `XLim` and `YLim`
+properties. Instead, it sets the `XLimitMethod` and `YLimitMethod`
+properties to "tight". With this choice, the axes limits will tightly
+enclose the data contained by the axes, including the image and
+anything else that might also be plotted in the same axes. Also unlike
+`imshow`, the axes limits will continue to automatically adjust to
+additional data being plotted there.
+
+- When displaying an indexed image, `imview` sets the colormap of the
+axes instead of the figure.
+
+- `imview` supports `AlphaData` input.
+
+- When reading image data from a PNG file, `imview` will read and use
+pixel transparency data if it is in the file.
+
+- `imview` does not have an input argument for controlling the initial
+zoom level, as `InitialMagnification` does for `imshow`. Instead, call
+`setImageZoomLevel` or `zoomImage` after calling `imview`.
+
+- `imview` does not observe the MATLAB Image Display Preferences.
+
 ## Limitations
- 
-The function `imview` is under development. This version does not yet have some of the options supported by imshow, including:
- 
-- Overriding the default black-white range
-- Overriding the default interpolation behavior
-- Overriding the default `XData` and `YData`
-- Setting the initial magnification level
-- Specifying the parent axes
-- Displaying an indexed image
-- Using an image filename or URL
+  
+If imview is used in a live script in the MATLAB Editor, the position
+of the zoom level display does not update correctly when the image is
+zoomed or panned. The "adaptive" interpolation mode and the pixel grid
+also do not update correctly.
+
+When using a PNG file's pixel transparency, imview does not read or use
+the background color contained in the file, so the appearance may be
+different from the PNG creator's intent.
  
 ## Prerequisites
  
@@ -50,7 +83,7 @@ See the [Getting Started](https://viewer.mathworks.com/?viewer=live_code&url=htt
 
 ## Image Credits
 
-### Margaret D. Foster.jpg
+### margaret-d-foster.jpg
 
 Created / published October 4, 1919
 
@@ -62,7 +95,7 @@ Rights: No known restrictions on publication. For more information, see National
 
 TIFF file downloaded from https://www.loc.gov/resource/npcc.00520/ on 20-Jan-2025 and converted to JPEG using Mac Preview app.
 
-### Capitol Building Stained Glass.jpg
+### capitol-building-stained-glass.jpg
 
 Created / published February 21, 2021, Carol M. Highsmith, photographer
 
@@ -73,5 +106,9 @@ LCCN Permalink: https://lccn.loc.gov/2021755860
 Rights: No known restrictions on publication.
 
 432.9 MB TIFF file downloaded from https://www.loc.gov/resource/highsm.67639/ on 20-Jan-2025, converted to JPEG and reduced to 3550x2662 by Mac Preview app.
+
+### nasa-rainfall-05-degrees-dec-2024.mat
+
+1-month rainfall for December 2024, 0.5 degree resolution, IMERG program, downloaded from https://neo.gsfc.nasa.gov/view.php?datasetId=GPM_3IMERGM on 25-Jan-2025.
 
 Copyright &copy; 2024 Steven L. Eddins
