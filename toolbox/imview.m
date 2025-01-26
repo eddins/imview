@@ -20,6 +20,9 @@
 %
 %   IM = IMVIEW(___) returns the matlab.graphics.primitive.Image object.
 %
+%   For more information and examples, edit ImviewGettingStarted.mlx or
+%   ImviewExamples.mlx.
+%
 %   NAME-VALUE ARGUMENTS
 %
 %   Specify optional pairs of arguments as Name1=Value1,...,NameN=ValueN,
@@ -53,7 +56,15 @@
 %       Parent axes of image object, specified as an Axes object or a
 %       UIAxes object. 
 %
-%   XData - Placement along the x-axis
+%   SpatialReference - 2-D spatial reference
+%       2-D spatial reference of the input image, specified as an imref2d
+%       object. Note that you must have Image Processing Toolbox to use
+%       this argument.
+%
+%   ShowZoomLevel - Show the zoom level on the image
+%       True or false.
+%
+%       Default: imview.ShowZoomLevel setting%   XData - Placement along the x-axis
 %       Two-element vector setting the XData property of the created image
 %       object. See the documentation for image properties.
 %
@@ -64,15 +75,6 @@
 %       object. See the documentation for image properties.
 %
 %       Default: [1 size(A,1)]
-%
-%   SpatialReference - 2-D spatial reference
-%       2-D spatial reference of the input image, specified as an imref2d
-%       object.
-%
-%   ShowZoomLevel - Show the zoom level on the image
-%       True or false.
-%
-%       Default: imview.ShowZoomLevel setting
 %
 %   COMPARISON WITH IMSHOW
 %
