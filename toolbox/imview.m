@@ -280,7 +280,7 @@ function t = createMagnificationText(im,show_zoom_level)
          Margin = 1, ...
          ButtonDownFcn = @handleMagnificationTextClick, ...
          Visible = show_zoom_level, ...
-         Tag = "MagnificationText", ...
+         Tag = "ZoomLevelDisplay", ...
          UserData = s, ...
          Parent = imageAxes(im));
 end
@@ -344,7 +344,7 @@ end
 
 function t = findMagnificationText(im)
     ax = imageAxes(im);
-    t = findobj(ax,"Tag","MagnificationText");
+    t = findobj(ax,"Tag","ZoomLevelDisplay");
     if ~isempty(t)
         t = t(1);
     end
@@ -633,7 +633,7 @@ end
 function handleZoomLevelToolbarValueChange(btn,event)
     tb = btn.Parent;
     ax = tb.Parent;
-    txt = findobj(ax, "Tag", "MagnificationText");
+    txt = findobj(ax, "Tag", "ZoomLevelDisplay");
     if isempty(txt)
         return
     end
