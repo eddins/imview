@@ -128,6 +128,11 @@
 %   - When displaying an indexed image, IMVIEW sets the colormap of the
 %   axes instead of the figure.
 %
+%   - IMVIEW supports AlphaData input.
+%
+%   - When reading image data from a PNG file, IMVIEW will read and use
+%   pixel transparency data if it is in the file.
+%
 %   - IMVIEW does not have an input argument for controlling the initial
 %   zoom level, as InitialMagnification does for imshow. Instead, call
 %   setImageZoomLevel or zoomImage after calling IMVIEW.
@@ -140,6 +145,10 @@
 %   of the zoom level display does not update correctly when the image is
 %   zoomed or panned. The "adaptive" interpolation mode and the pixel grid
 %   also do not update correctly.
+%
+%   When using a PNG file's pixel transparency, IMVIEW does not read or use
+%   the background color contained in the file, so the appearance may be
+%   different from the PNG creator's intent.
 %
 %   REQUIRED ADD-ONS
 %
