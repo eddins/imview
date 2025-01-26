@@ -110,10 +110,9 @@
 %
 %   - IMVIEW can display the zoom level (as a percentage) at the lower
 %   right of the image. The zoom level can be changed directly by clicking
-%   on the zoom level display and editing it. The zoom level display is
-%   shown by default, but you can override the default using the
-%   ShowZoomLevel named argument. You can also override it by changing a
-%   persistent setting:
+%   on the zoom level display and editing it. The zoom level is displayed
+%   by default, but you can override that using the ShowZoomLevel argument.
+%   You can also override it by changing a persistent setting:
 %
 %       s = settings;
 %       s.imview.ShowZoomLevel.PersonalValue = true;
