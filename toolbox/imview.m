@@ -78,6 +78,20 @@
 %
 %       Default: [1 size(A,1)]
 %
+%   AXES PROPERTIES
+%
+%   IMVIEW sets the following properties of axes:
+%
+%       CLim            - Set for grayscale and binary images
+%       Colormap        - Set for grayscale, indexed, and binary images
+%       DataAspectRatio - Set to [1 1 1]
+%       YDir            - Set to "reverse"
+%       XLimMode        - Set to "auto"
+%       YLimMode        - Set to "auto"
+%       XLimitMethod    - Set to "tight"
+%       YLimitMethod    - Set to "tight"
+%       Visible         - Set to "off"
+%
 %   COMPARISON WITH IMSHOW
 %
 %   The function IMVIEW is intended to be used instead of imshow for many
@@ -111,6 +125,9 @@
 %   anything else that might also be plotted in the same axes. Also unlike
 %   imshow, the axes limits will continue to automatically adjust to
 %   additional data being plotted there.
+%
+%   - When displaying an indexed image, IMVIEW sets the colormap of the
+%   axes instead of the figure.
 %
 %   - IMVIEW does not have an input argument for controlling the initial
 %   zoom level, as InitialMagnification does for imshow. Instead, call
@@ -153,13 +170,25 @@ function out = imview(A,map,options)
         options.SpatialReference (1,1) imref2d
     end
 
+    % Make sure that the needed add-on packages are present. Throw an error
+    % if they are not.
     verifyDependencies();
+
+    % If image data, A, has been passed in as a filename or URL, then get
+    % the real image data, colormap, and alpha data from the file or URL.
     [A,map,options.AlphaData] = processImageData(A,map,options.AlphaData);
+
+    % Infer the image type based on data type of A and whether a colormap
+    % was passed in.
     type = imageType(A,map);
+
+    % Fill in the option values that were not provided, or that still need
+    % to be computed, which need to be refined based on the image data and
+    % type.
     options_p = processOptions(options,A,type);
 
     ax = options_p.Parent;
-    im = image(CData = A, Parent = ax, Interpolation = "bilinear", ...
+    im = image(CData = A, Parent = ax, ...
         AlphaData = options_p.AlphaData);
 
     im.XData = options_p.XData;
@@ -176,8 +205,10 @@ function out = imview(A,map,options)
         case "binary"
             im.CDataMapping = "scaled";
             ax.Colormap = [0 0 0; 1 1 1];
+            ax.CLim = [0 1];
     end
 
+    % Additional axes property side effects.
     ax.DataAspectRatio = [1 1 1];
     ax.YDir = "reverse";
     ax.XLimMode = "auto";
@@ -186,6 +217,7 @@ function out = imview(A,map,options)
     ax.YLimitMethod = "tight";
     ax.Visible = "off";
 
+    % Turn on the automatic pixel grid behavior.
     pixelgrid(im)
 
     switch options_p.Interpolation
@@ -194,6 +226,8 @@ function out = imview(A,map,options)
         case "bilinear"
             im.Interpolation = "bilinear";
         case "adaptive"
+            im.Interpolation = "bilinear";
+
             % See the article "Undocumented HG2 graphics events" for an explanation
             % of the following code.
             %
@@ -204,6 +238,8 @@ function out = imview(A,map,options)
 
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
 
+    % Standard practice in high-level graphics functions is to return an
+    % output argument only if requested.
     if nargout > 0
         out = im;
     end
