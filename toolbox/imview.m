@@ -269,6 +269,29 @@ function updateImageDisplay(im, show_zoom_level)
     updateZoomLevelDisplay(im,show_zoom_level)
 end
 
+function ax = imageAxes(im)
+    ax = ancestor(im, "axes");
+    if isempty(ax)
+        ax = ancestor(im, "uiaxes");
+    end    
+end
+
+%%%
+%%% Utility functions for managing zoom level display
+%%%
+%%%     createZoomLevelDisplay
+%%%     handleZoomLevelDisplayClick
+%%%     handleZoomLevelDisplayChange
+%%%     zoomLevelFromString
+%%%     updateZoomLevelDisplay
+%%%     zoomLevelText
+%%%     findZoomLevelDisplay
+%%%     updateZoomLevelDisplayPosition
+%%%     showZoomLevelSetting
+%%%     addShowZoomLevelToolbarButton
+%%%     handleZoomLevelToolbarValueChange
+%%%
+
 function t = createZoomLevelDisplay(im,show_zoom_level)
     s = struct("Image", im, "PostSetListener", []);
     t = text(1,1,"", ...
@@ -373,12 +396,87 @@ function updateZoomLevelDisplayPosition(t,im)
     t.Position(1:2) = [x y];
 end
 
-function ax = imageAxes(im)
-    ax = ancestor(im, "axes");
-    if isempty(ax)
-        ax = ancestor(im, "uiaxes");
-    end    
+function tf = showZoomLevelSetting
+    s = settings;
+    if ~hasGroup(s,"imview")
+        s.addGroup(s,"imview")
+    end
+
+    g = s.imview;
+
+    if ~g.hasSetting("ShowZoomLevel")
+        g.addSetting("ShowZoomLevel", PersonalValue = true);
+    end
+
+    zoom_setting = g.ShowZoomLevel;
+
+    tf = zoom_setting.ActiveValue;
 end
+
+function addShowZoomLevelToolbarButton(ax, initial_value)
+    tb_old = ax.Toolbar;
+    if ~isempty(findobj(tb_old, "Tag", "ShowZoomLevelButton"))
+        return
+    end
+
+    btns = tb_old.Children;
+    if isempty(btns)
+        tb = axtoolbar(ax, "default");
+    else
+        tb = axtoolbar(ax);
+        btns(k).Parent = tb;
+    end
+
+    if initial_value
+        tooltip = "Hide zoom-level display";
+    else
+        tooltip = "Show zoom-level display";
+    end
+
+    axtoolbarbtn(tb, "state", ...
+        Icon = "imview_show_zoom_level_icon.png", ...
+        Value = initial_value, ...
+        Tooltip = tooltip, ...
+        Tag = "ShowZoomLevelButton", ...
+        ValueChangedFcn = @handleZoomLevelToolbarValueChange );
+end
+
+function handleZoomLevelToolbarValueChange(btn,event)
+    tb = btn.Parent;
+    ax = tb.Parent;
+    txt = findobj(ax, "Tag", "ZoomLevelDisplay");
+    if isempty(txt)
+        return
+    end
+
+    if event.Value
+        txt.Visible = "on";
+        btn.Tooltip = "Hide zoom-level display";
+    else
+        txt.Visible = "off";
+        btn.Tooltip = "Show zoom-level display";
+    end
+end
+
+%%%
+%%% Utility functions for checking and processing function inputs
+%%%
+%%%     imageType
+%%%     processImageData
+%%%     verifyDependencies
+%%%     mFunctionExists
+%%%     mustBeValidXYData
+%%%     mustBeValidGrayLimits
+%%%     mustBeValidParentAxes
+%%%     processOptions
+%%%     processShowZoomLevel
+%%%     processAlphaData
+%%%     processParent
+%%%     processInterpolation
+%%%     processXData
+%%%     processYData
+%%%     processGrayLimits
+%%%     
 
 function type = imageType(A,map)
     if ((ndims(A) == 3) && (size(A,3) == 3))
@@ -585,66 +683,6 @@ function gray_limits_p = processGrayLimits(options,A)
     end
 end
 
-function tf = showZoomLevelSetting
-    s = settings;
-    if ~hasGroup(s,"imview")
-        s.addGroup(s,"imview")
-    end
 
-    g = s.imview;
-
-    if ~g.hasSetting("ShowZoomLevel")
-        g.addSetting("ShowZoomLevel", PersonalValue = true);
-    end
-
-    zoom_setting = g.ShowZoomLevel;
-
-    tf = zoom_setting.ActiveValue;
-end
-
-function addShowZoomLevelToolbarButton(ax, initial_value)
-    tb_old = ax.Toolbar;
-    if ~isempty(findobj(tb_old, "Tag", "ShowZoomLevelButton"))
-        return
-    end
-
-    btns = tb_old.Children;
-    if isempty(btns)
-        tb = axtoolbar(ax, "default");
-    else
-        tb = axtoolbar(ax);
-        btns(k).Parent = tb;
-    end
-
-    if initial_value
-        tooltip = "Hide zoom-level display";
-    else
-        tooltip = "Show zoom-level display";
-    end
-
-    axtoolbarbtn(tb, "state", ...
-        Icon = "imview_show_zoom_level_icon.png", ...
-        Value = initial_value, ...
-        Tooltip = tooltip, ...
-        Tag = "ShowZoomLevelButton", ...
-        ValueChangedFcn = @handleZoomLevelToolbarValueChange );
-end
-
-function handleZoomLevelToolbarValueChange(btn,event)
-    tb = btn.Parent;
-    ax = tb.Parent;
-    txt = findobj(ax, "Tag", "ZoomLevelDisplay");
-    if isempty(txt)
-        return
-    end
-
-    if event.Value
-        txt.Visible = "on";
-        btn.Tooltip = "Hide zoom-level display";
-    else
-        txt.Visible = "off";
-        btn.Tooltip = "Show zoom-level display";
-    end
-end
 
 % Copyright 2024-2025 Steven L. Eddins
