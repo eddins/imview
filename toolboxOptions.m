@@ -30,7 +30,7 @@ function opts = toolboxOptions
     % or an absolute path.
 
     opts.ToolboxGettingStartedGuide = fullfile("toolbox",...
-        "gettingStarted.mlx");
+        "ImviewGettingStarted.mlx");
 
     % Path to the toolbox output file, specified as a string. The path can
     % be a relative path or an absolute path. If the file does not have a

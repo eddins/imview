@@ -64,7 +64,9 @@
 %   ShowZoomLevel - Show the zoom level on the image
 %       True or false.
 %
-%       Default: imview.ShowZoomLevel setting%   XData - Placement along the x-axis
+%       Default: imview.ShowZoomLevel setting
+%
+%   XData - Placement along the x-axis
 %       Two-element vector setting the XData property of the created image
 %       object. See the documentation for image properties.
 %
@@ -92,6 +94,16 @@
 %   nearest neighbor, and a pixel grid is shown. The function imshow uses
 %   nearest neighbor interpolation by default.
 %
+%   - IMVIEW can display the zoom level (as a percentage) at the lower
+%   right of the image. The zoom level can be changed directly by clicking
+%   on the zoom level display and editing it. The zoom level display is
+%   shown by default, but you can override the default using the
+%   ShowZoomLevel named argument. You can also override it by changing a
+%   persistent setting:
+%
+%       s = settings;
+%       s.imview.ShowZoomLevel.PersonalValue = true;
+%
 %   - Unlike imshow, IMVIEW does not explicitly set the axes XLim and YLim
 %   properties. Instead, it sets the XLimitMethod and YLimitMethod
 %   properties to "tight". With this choice, the axes limits will tightly
@@ -100,18 +112,18 @@
 %   imshow, the axes limits will continue to automatically adjust to
 %   additional data being plotted there.
 %
+%   - IMVIEW does not have an input argument for controlling the initial
+%   zoom level, as InitialMagnification does for imshow. Instead, call
+%   setImageZoomLevel or zoomImage after calling IMVIEW.
+%
 %   - IMVIEW does not observe the MATLAB Image Display Preferences.
 %
 %   LIMITATIONS
 %
-%   The function IMVIEW is under development. This version does not yet
-%   have some of the options supported by imshow, including:
-%
-%   - Setting the initial magnification level (although you can use
-%     setImageZoomLevel or zoomImage after calling imview)
-%
-%   TODO using imview directly in the Editor (interpolation mode switching,
-%   zoom display in the wrong place)
+%   If IMVIEW is used in a live script in the MATLAB Editor, the position
+%   of the zoom level display does not update correctly when the image is
+%   zoomed or panned. The "adaptive" interpolation mode and the pixel grid
+%   also do not update correctly.
 %
 %   REQUIRED ADD-ONS
 %
