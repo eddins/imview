@@ -266,10 +266,10 @@ function updateImageDisplay(im, show_zoom_level)
         end
     end
 
-    updateMagnificationText(im,show_zoom_level)
+    updateZoomLevelDisplay(im,show_zoom_level)
 end
 
-function t = createMagnificationText(im,show_zoom_level)
+function t = createZoomLevelDisplay(im,show_zoom_level)
     s = struct("Image", im, "PostSetListener", []);
     t = text(1,1,"", ...
          BackgroundColor = uint8([200 200 200 200]), ...
@@ -278,20 +278,20 @@ function t = createMagnificationText(im,show_zoom_level)
          HorizontalAlignment = "right", ...
          VerticalAlignment = "bottom", ...
          Margin = 1, ...
-         ButtonDownFcn = @handleMagnificationTextClick, ...
+         ButtonDownFcn = @handleZoomLevelDisplayTextClick, ...
          Visible = show_zoom_level, ...
          Tag = "ZoomLevelDisplay", ...
          UserData = s, ...
          Parent = imageAxes(im));
 end
 
-function handleMagnificationTextClick(t,~)
+function handleZoomLevelDisplayTextClick(t,~)
     t.UserData.PostSetListener = addlistener(t, "String", "PostSet", ...
-        @handleMagnificationTextEdit);
+        @handleZoomLevelDisplayChange);
     t.Editing = "on";
 end
 
-function handleMagnificationTextEdit(~,prop_event)
+function handleZoomLevelDisplayChange(~,prop_event)
     t = prop_event.AffectedObject;
     delete(t.UserData.PostSetListener);
     t.UserData.PostSetListener = [];
@@ -299,18 +299,18 @@ function handleMagnificationTextEdit(~,prop_event)
     if ~isgraphics(im)
         t.String = "";
     else
-        mag = magnificationFromString(t.String);
+        mag = zoomLevelFromString(t.String);
         if isempty(mag)
             % Invalid text field entry from user.
             mag = getImageZoomLevel(im);
         else
             setImageZoomLevel(mag,im)
         end
-        t.String = magnificationTextString(mag);
+        t.String = zoomLevelText(mag);
     end
 end
 
-function mag = magnificationFromString(s)
+function mag = zoomLevelFromString(s)
     s = replace(s, "%", "");
     mag = sscanf(s, "%f");
     valid_mag = (numel(mag) >= 1) && ...
@@ -324,16 +324,16 @@ function mag = magnificationFromString(s)
     end
 end
 
-function updateMagnificationText(im,show_zoom_level)
-    t = findMagnificationText(im);
+function updateZoomLevelDisplay(im,show_zoom_level)
+    t = findZoomLevelDisplay(im);
     if isempty(t)
-        t = createMagnificationText(im,show_zoom_level);
+        t = createZoomLevelDisplay(im,show_zoom_level);
     end
-    updateMagnificationTextPosition(t,im);
-    t.String = magnificationTextString(getImageZoomLevel(im));
+    updateZoomLevelDisplayPosition(t,im);
+    t.String = zoomLevelText(getImageZoomLevel(im));
 end
 
-function s = magnificationTextString(mag)
+function s = zoomLevelText(mag)
     mag = round(mag);
     if isscalar(mag) || (mag(1) == mag(2))
         s = sprintf(" %d%% ", mag(1));
@@ -342,7 +342,7 @@ function s = magnificationTextString(mag)
     end
 end
 
-function t = findMagnificationText(im)
+function t = findZoomLevelDisplay(im)
     ax = imageAxes(im);
     t = findobj(ax,"Tag","ZoomLevelDisplay");
     if ~isempty(t)
@@ -350,7 +350,7 @@ function t = findMagnificationText(im)
     end
 end
 
-function updateMagnificationTextPosition(t,im)
+function updateZoomLevelDisplayPosition(t,im)
     ax = imageAxes(im);
     xdata = im.XData;
     ydata = im.YData;
