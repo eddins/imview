@@ -407,7 +407,7 @@ end
 function tf = showZoomLevelSetting
     s = settings;
     if ~hasGroup(s,"imview")
-        s.addGroup(s,"imview")
+        addGroup(s,"imview")
     end
 
     g = s.imview;
