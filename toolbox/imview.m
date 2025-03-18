@@ -102,7 +102,7 @@
 %   created if they do not exist.
 %
 %   - IMVIEW displays the image using bilinear interpolation and
-%   antialiasing, unless individual pixels are larger than about 0.2
+%   antialiasing, unless individual pixels are larger than about 0.25
 %   inches. In that case, the interpolation switches automatically to
 %   nearest neighbor, and a pixel grid is shown. The function imshow uses
 %   nearest neighbor interpolation by default.
@@ -272,7 +272,7 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode)
                 im.Interpolation = 'nearest';
             end
         else
-            if any(getImagePixelExtentInches(im) >= 0.2)
+            if any(getImagePixelExtentInches(im) >= 0.25)
                 if ~strcmp(im.Interpolation,'nearest')
                     im.Interpolation = 'nearest';
                 end
