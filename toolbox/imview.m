@@ -18,10 +18,9 @@
 %   IMVIEW(___,Name=Value) uses name-value arguments to control aspects of
 %   the image display.
 %
-%   IM = IMVIEW(___) returns the matlab.graphics.primitive.Image object.
+%   IM = IMVIEW(___) returns the graphics Image object.
 %
-%   For more information and examples, edit ImviewGettingStarted.mlx or
-%   ImviewExamples.mlx.
+%   For more information and examples, see ImviewGettingStarted.mlx.
 %
 %   NAME-VALUE ARGUMENTS
 %
@@ -141,10 +140,11 @@
 %
 %   LIMITATIONS
 %
-%   If IMVIEW is used in a live script in the MATLAB Editor, the position
-%   of the zoom level display does not update correctly when the image is
-%   zoomed or panned. The "adaptive" interpolation mode and the pixel grid
-%   also do not update correctly.
+%   When running inside a live script, the pixel grid visibility and the
+%   image interpolation method will not automatically adjust when zooming
+%   interactively using the axes toolbar. To update the pixel grid and
+%   interpolation method after zooming using the axes toolbar, press the
+%   "Update Code" button and then execute the script or code section again.
 %
 %   When using a PNG file's pixel transparency, IMVIEW does not read or use
 %   the background color contained in the file, so the appearance may be
@@ -225,8 +225,7 @@ function out = imview(A,map,options)
     ax.YLimitMethod = "tight";
     ax.Visible = "off";
 
-    % Turn on the automatic pixel grid behavior.
-    pixelgrid(im)
+    pixelgrid(im);
 
     switch options_p.Interpolation
         case "nearest"
@@ -234,17 +233,26 @@ function out = imview(A,map,options)
         case "bilinear"
             im.Interpolation = "bilinear";
         case "adaptive"
+            % Start as bilinear. The update function will change this to
+            % nearest when the pixels get big enough.
             im.Interpolation = "bilinear";
-
-            % See the article "Undocumented HG2 graphics events" for an explanation
-            % of the following code.
-            %
-            % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
-            addlistener(im,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
-            addlistener(ax,"MarkedClean",@(~,~) updateImageDisplay(im, options_p.ShowZoomLevel));
     end
 
+    update_fcn = @(~,~) updateImageDisplay(im, ...
+        options_p.ShowZoomLevel, options_p.Interpolation);
+
+    % See the article "Undocumented HG2 graphics events" for an explanation
+    % of the following code.
+    %
+    % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
+    % addlistener(im,"MarkedClean",@(~,~) ...
+    %     updateImageDisplay(im, options_p.ShowZoomLevel, options_p.Interpolation));
+    addlistener(ax,"MarkedClean", update_fcn);
+    addlistener(im,"MarkedClean", update_fcn);
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
+
+    % Make sure the update function gets called at least once.
+    update_fcn();
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
@@ -253,23 +261,25 @@ function out = imview(A,map,options)
     end
 end
 
-function updateImageDisplay(im, show_zoom_level)
+function updateImageDisplay(im, show_zoom_level, interpolation_mode)
     if ~ishandle(im)
         return
     end
     
-    if ismatrix(im.CData) && strcmp(im.CDataMapping,'direct')
-        if ~strcmp(im.Interpolation,'nearest')
-            im.Interpolation = 'nearest';
-        end
-    else
-        if any(getImagePixelExtentInches(im) >= 0.2)
+    if (interpolation_mode == "adaptive")
+        if ismatrix(im.CData) && strcmp(im.CDataMapping,'direct')
             if ~strcmp(im.Interpolation,'nearest')
                 im.Interpolation = 'nearest';
             end
         else
-            if ~strcmp(im.Interpolation,'bilinear')
-                im.Interpolation = 'bilinear';
+            if any(getImagePixelExtentInches(im) >= 0.2)
+                if ~strcmp(im.Interpolation,'nearest')
+                    im.Interpolation = 'nearest';
+                end
+            else
+                if ~strcmp(im.Interpolation,'bilinear')
+                    im.Interpolation = 'bilinear';
+                end
             end
         end
     end
@@ -365,11 +375,16 @@ function updateZoomLevelDisplay(im,show_zoom_level)
 end
 
 function s = zoomLevelText(mag)
-    mag = round(mag);
-    if isscalar(mag) || (mag(1) == mag(2))
-        s = sprintf(" %d%% ", mag(1));
+    if isscalar(mag)
+        s = sprintf(" %d%% ", round(mag));
     else
-        s = " " + sprintf("%d%% ", mag);
+        d = abs(diff(mag)) / max(mag);
+        reltol = 5e-4;
+        if (d < reltol)
+            s = sprintf(" %d%% ", round(max(mag)));
+        else
+            s = " " + sprintf("%d%% ", round(mag));
+        end
     end
 end
 
@@ -401,7 +416,9 @@ function updateZoomLevelDisplayPosition(t,im)
     x = min(x,ax.XLim(2));
     y = ydata(end) + pixel_height/2;
     y = min(y,ax.YLim(2));
-    t.Position(1:2) = [x y];
+    if ~isequal(t.Position(1:2), [x y])
+        t.Position(1:2) = [x y];
+    end
 end
 
 function tf = showZoomLevelSetting
@@ -690,7 +707,5 @@ function gray_limits_p = processGrayLimits(options,A)
         gray_limits_p = getrangefromclass(A);
     end
 end
-
-
 
 % Copyright 2024-2025 Steven L. Eddins
