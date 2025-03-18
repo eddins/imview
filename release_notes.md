@@ -1,6 +1,20 @@
-# IMVIEW 2.0 Release Notes
+# IMVIEW Release Notes
 
-## New Features
+## Version 2.0.4
+
+Various implementation changes to improve robustness.
+
+Changed the pixel size threshold for adaptive interpolation to 0.25 inches.
+
+Now depends on version 2.0.2 or later of [Image Zoom Level and Pan Utilities](https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities).
+
+Now depends on version 2.0.2 or later of [Pixel Grid](https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid).
+
+## Version 2.0.3
+
+Fixed bug in initial creation of imview settings group.
+
+## Version 2.0.0
 
 - Supports indexed images
 - Supports getting image data from a file or URL
