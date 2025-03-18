@@ -545,23 +545,29 @@ function [A,map,alpha] = processImageData(A,map,alpha)
 end
 
 function verifyDependencies
-    if ~mFunctionExists("pixelgrid")
-        error("imview:NeedPixelGrid", ...
-            "Pixel Grid add-on package is not installed. " + ...
-            "Download it from: https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid")
+    try
+        needs_updated_imzm = ~imzm.version.hasCapability("units_fix");
+    catch
+        needs_updated_imzm = true;
+    end
+    if needs_updated_imzm
+        error("imview:NeedIMZM",...
+            "Missing or outdated add-on ""Image Zoom and Pan Utilities"". " + ...
+            "Download and install the latest version from " + ...
+            "https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities.")
     end
 
-    if ~mFunctionExists("getImagePixelExtentInches")
-        error("imview:NeedIMZM", ...
-            "Image Zoom Level and Pan Utilities add-on package is not installed. " + ...
-            "Download it from: https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities")
+    try
+        needs_updated_pg = ~pg.version.hasCapability("threshold_change_2.0.2");
+    catch
+        needs_updated_pg = true;
     end
-end
-
-function tf = mFunctionExists(function_name)
-    w = which(function_name);
-    [~,name,ext] = fileparts(w);
-    tf = (string(name) == function_name) && (ext == ".m");
+    if needs_updated_pg
+        error("imview:NeedPixelGrid",...
+            "Missing or outdated add-on ""Pixel Grid"". " + ...
+            "Download and install the latest version from " + ...
+            "https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid.")
+    end    
 end
 
 function mustBeValidXYData(data)
