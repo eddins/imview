@@ -142,8 +142,10 @@
 %
 %   When running inside a live script, the pixel grid visibility and the
 %   image interpolation method will not automatically adjust when zooming
-%   interactively using the axes toolbar. To update the pixel grid and
-%   interpolation method after zooming using the axes toolbar, press the
+%   interactively using the axes toolbar. Also, if you pan interactively
+%   using the axes toolbar, the zoom-level display text may move while you
+%   pan. To update the pixel grid, interpolation method, and the zoom-level
+%   display after zooming or panning using the axes toolbar, press the
 %   "Update Code" button and then execute the script or code section again.
 %
 %   When using a PNG file's pixel transparency, IMVIEW does not read or use
