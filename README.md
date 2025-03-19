@@ -6,26 +6,29 @@ The MATLAB function `imview` displays a binary, grayscale, indexed, or RGB image
 
 ## Comparing `imview` and `imshow`
 
-The function `imview` differs from `imshow` in several important ways:
+The function `imview` is intended to be used instead of `imshow` for many
+purposes. It differs from `imshow` in several important ways:
 
 - `imview` does not resize the figure containing the image display.
 Instead, the image is displayed in the current axes in the current
-figure.
+figure (as returned by the function `newplot`). A figure and axes will be
+created if they do not exist.
 
 - `imview` displays the image using bilinear interpolation and
-antialiasing, unless individual pixels are larger than about 0.2
+antialiasing, unless individual pixels are larger than about 0.25
 inches. In that case, the interpolation switches automatically to
 nearest neighbor, and a pixel grid is shown. The function `imshow` uses
 nearest neighbor interpolation by default.
 
-- `imview` displays the current zoom level at the lower
+- `imview` displays the zoom level (as a percentage) at the lower
 right of the image. The zoom level can be changed directly by clicking
-on the zoom level display and editing it. There are several ways to turn off this display
-if desired.
+on the zoom level display and editing it. The zoom level is displayed
+by default, but you can override that using the `ShowZoomLevel` argument.
+You can also override it by changing a persistent setting: `s = settings; s.imview.ShowZoomLevel.PersonalValue = true;`
 
 - Unlike `imshow`, `imview` does not explicitly set the axes `XLim` and `YLim`
 properties. Instead, it sets the `XLimitMethod` and `YLimitMethod`
-properties to "tight". With this choice, the axes limits will tightly
+properties to `"tight"`. With this choice, the axes limits will tightly
 enclose the data contained by the axes, including the image and
 anything else that might also be plotted in the same axes. Also unlike
 `imshow`, the axes limits will continue to automatically adjust to
@@ -41,20 +44,9 @@ pixel transparency data if it is in the file.
 
 - `imview` does not have an input argument for controlling the initial
 zoom level, as `InitialMagnification` does for `imshow`. Instead, call
-`setImageZoomLevel` or `zoomImage` after calling `imview`.
+`setImageZoomLevel` or `zoomImage` after calling imview.
 
 - `imview` does not observe the MATLAB Image Display Preferences.
-
-## Limitations
-  
-If imview is used in a live script in the MATLAB Editor, the position
-of the zoom level display does not update correctly when the image is
-zoomed or panned. The "adaptive" interpolation mode and the pixel grid
-also do not update correctly.
-
-When using a PNG file's pixel transparency, imview does not read or use
-the background color contained in the file, so the appearance may be
-different from the PNG creator's intent.
  
 ## Prerequisites
  
