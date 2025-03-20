@@ -1,5 +1,9 @@
 # IMVIEW Release Notes
 
+## Version 2.0.6
+
+Revise the getting-started file so that running it does not change settings.
+
 ## Version 2.0.5
 
 There are no code or functional changes in this release. It is only for resolving an issue with the File Exchange connection.
