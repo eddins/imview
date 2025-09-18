@@ -286,6 +286,16 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode)
         end
     end
 
+    ax = ancestor(im, "axes");
+    if (ax.XLimMode == "auto") || (ax.YLimMode == "auto")
+        zoom_level = getImageZoomLevel(im);
+        axes_center = getAxesCenterXY(ax);
+        ax.XLimMode = "auto";
+        ax.YLimMode = "auto";
+        setImageZoomLevel(zoom_level, im);
+        setAxesCenterXY(axes_center, ax);
+    end
+
     updateZoomLevelDisplay(im,show_zoom_level)
 end
 
