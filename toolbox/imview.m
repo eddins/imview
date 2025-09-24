@@ -200,6 +200,7 @@ function out = imview(A,map,options)
     ax = options_p.Parent;
     im = image(CData = A, Parent = ax, ...
         AlphaData = options_p.AlphaData);
+    fig = ancestor(ax,"figure");
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
