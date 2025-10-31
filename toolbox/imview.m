@@ -200,7 +200,6 @@ function out = imview(A,map,options)
     ax = options_p.Parent;
     im = image(CData = A, Parent = ax, ...
         AlphaData = options_p.AlphaData);
-    fig = ancestor(ax,"figure");
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
@@ -241,27 +240,71 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    update_fcn = @(~,~) updateImageDisplay(im, ...
-        options_p.ShowZoomLevel, options_p.Interpolation);
-
-    % See the article "Undocumented HG2 graphics events" for an explanation
-    % of the following code.
-    %
-    % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
-    % addlistener(im,"MarkedClean",@(~,~) ...
-    %     updateImageDisplay(im, options_p.ShowZoomLevel, options_p.Interpolation));
-    addlistener(ax,"MarkedClean", update_fcn);
-    addlistener(im,"MarkedClean", update_fcn);
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
 
-    % Make sure the update function gets called at least once.
-    update_fcn();
+    installMarkedCleanHandler(im, ax, options_p);
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
     if nargout > 0
         out = im;
     end
+end
+
+function installMarkedCleanHandler(im, ax, options)
+    if imvw.internal.liveEditorRunning
+        installMarkedCleanHandlerInLiveScript(im, ax, options)
+    else
+        addMarkedCleanListenerCallbacks(im, ax, options);
+    end
+end
+
+function installMarkedCleanHandlerInLiveScript(im, ~, options)
+    imview_id = imvw.internal.uuid;
+    setappdata(im, "imview_id", imview_id);
+    t = timer;
+    t.StartDelay = 0.1;
+    t.Period = 0.1;
+    t.ExecutionMode = "fixedSpacing";
+    t.TasksToExecute = 10;
+    t.TimerFcn = @(t,~) searchAndAddMarkedCleanListenerCallbacks(t, imview_id, options);
+    start(t)
+end
+
+function searchAndAddMarkedCleanListenerCallbacks(t, imview_id, options)
+    fprintf("Search no. %d for embedded images\n", t.TasksExecuted);
+    ii = findall(groot, "type", "image");
+    embedded_images_found = false;
+    for k = 1:length(ii)
+        fig = ancestor(ii(k), "figure");
+        if (fig.Tag == "EmbeddedFigure_Internal")
+            if (getappdata(ii(k), "imview_id") == imview_id)
+                embedded_images_found = true;
+                ax = ancestor(ii(k), "axes");
+                addMarkedCleanListenerCallbacks(ii(k), ax, options)
+            end
+        end
+    end
+    if embedded_images_found
+        fprintf("Embedded images found; stopping timer\n");
+        % stop(t);
+    end
+end
+
+function addMarkedCleanListenerCallbacks(im, ax, options)
+    update_fcn = @(~,~) updateImageDisplay(im, ...
+        options.ShowZoomLevel, options.Interpolation);
+
+    % See the article "Undocumented HG2 graphics events" for an explanation
+    % of the following code.
+    %
+    % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
+    % addlistener(im,"MarkedClean",@(~,~) ...
+    %     updateImageDisplay(im, options.ShowZoomLevel, options.Interpolation));
+    addlistener(ax,"MarkedClean", update_fcn);
+    addlistener(im,"MarkedClean", update_fcn);
+
+    update_fcn();
 end
 
 function updateImageDisplay(im, show_zoom_level, interpolation_mode)
@@ -457,12 +500,18 @@ function addShowZoomLevelToolbarButton(ax, initial_value)
         return
     end
 
-    btns = tb_old.Children;
-    if isempty(btns)
+    if isempty(tb_old)
         tb = axtoolbar(ax, "default");
     else
-        tb = axtoolbar(ax);
-        btns(k).Parent = tb;
+        btns = tb_old.Children;
+        if isempty(btns)
+            tb = axtoolbar(ax, "default");
+        else
+            tb = axtoolbar(ax);
+            for k = 1:length(btns)
+                btns(k).Parent = tb;
+            end
+        end
     end
 
     if initial_value
