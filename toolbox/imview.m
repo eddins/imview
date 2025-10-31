@@ -431,17 +431,12 @@ function updateZoomLevelDisplay(im,show_zoom_level)
 end
 
 function s = zoomLevelText(mag)
-    if isscalar(mag)
-        s = sprintf(" %d%% ", round(mag));
-    else
-        d = abs(diff(mag)) / max(mag);
-        reltol = 5e-4;
-        if (d < reltol)
-            s = sprintf(" %d%% ", round(max(mag)));
-        else
-            s = " " + sprintf("%d%% ", round(mag));
-        end
+    e = abs(mag(2) - mag(1)) / max(mag(1), mag(2));
+    if e < 1.5e-2
+        mag = mean(mag);
     end
+    mag = round(round(mag,3,"significant"));
+    s = sprintf(" %d%% ", mag);
 end
 
 function t = findZoomLevelDisplay(im)
