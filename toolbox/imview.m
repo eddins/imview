@@ -263,31 +263,58 @@ function installMarkedCleanHandlerInLiveScript(im, ~, options)
     imview_id = imvw.internal.uuid;
     setappdata(im, "imview_id", imview_id);
     t = timer;
-    t.StartDelay = 0.1;
-    t.Period = 0.1;
+    t.StartDelay = 0.2;
+    t.Period = 0.2;
     t.ExecutionMode = "fixedSpacing";
-    t.TasksToExecute = 10;
-    t.TimerFcn = @(t,~) searchAndAddMarkedCleanListenerCallbacks(t, imview_id, options);
-    start(t)
+    t.TimerFcn = @(t,~) handleTimerExecution(t, imview_id, options);
+    addlistener(im,"ObjectBeingDestroyed",@(varargin) stopAndDeleteTimer(t));
+    t.start();
 end
 
-function searchAndAddMarkedCleanListenerCallbacks(t, imview_id, options)
-    fprintf("Search no. %d for embedded images\n", t.TasksExecuted);
+function handleTimerExecution(t, imview_id, options)
+    searchAndAddMarkedCleanListenerCallbacks(imview_id, options);
+
+    if t.TasksExecuted == 10
+        % After 2 seconds, poll every 0.5 seconds
+        changeTimerPeriod(t,0.5);
+
+    elseif t.TasksExecuted == 26
+        % After 10 seconds, poll every second.
+        changeTimerPeriod(t,1);
+
+    elseif t.TasksExecuted == 76
+        % After 60 seconds, poll every 2 seconds.
+        changeTimerPeriod(t,2);
+
+    elseif t.TasksExecuted == 196
+        % After 5 minutes, stop polling.
+        stopAndDeleteTimer(t);
+    end
+end
+
+function changeTimerPeriod(t,new_period)
+    t.stop();
+    t.Period = new_period;
+    t.start();
+end
+
+function stopAndDeleteTimer(t)
+    if isvalid(t)
+        t.stop();
+        t.delete();
+    end
+end
+
+function searchAndAddMarkedCleanListenerCallbacks(imview_id, options)
     ii = findall(groot, "type", "image");
-    embedded_images_found = false;
     for k = 1:length(ii)
         fig = ancestor(ii(k), "figure");
         if (fig.Tag == "EmbeddedFigure_Internal")
             if (getappdata(ii(k), "imview_id") == imview_id)
-                embedded_images_found = true;
                 ax = ancestor(ii(k), "axes");
                 addMarkedCleanListenerCallbacks(ii(k), ax, options)
             end
         end
-    end
-    if embedded_images_found
-        fprintf("Embedded images found; stopping timer\n");
-        % stop(t);
     end
 end
 
@@ -295,14 +322,15 @@ function addMarkedCleanListenerCallbacks(im, ax, options)
     update_fcn = @(~,~) updateImageDisplay(im, ...
         options.ShowZoomLevel, options.Interpolation);
 
-    % See the article "Undocumented HG2 graphics events" for an explanation
-    % of the following code.
-    %
-    % https://undocumentedmatlab.com/articles/undocumented-hg2-graphics-events
-    % addlistener(im,"MarkedClean",@(~,~) ...
-    %     updateImageDisplay(im, options.ShowZoomLevel, options.Interpolation));
-    addlistener(ax,"MarkedClean", update_fcn);
-    addlistener(im,"MarkedClean", update_fcn);
+    if isempty(getappdata(im,"imview_marked_clean_listener"))
+        new_im_listener = listener(im,"MarkedClean",update_fcn);
+        setappdata(im,"imview_marked_clean_listener",new_im_listener);
+    end
+
+    if isempty(getappdata(ax,"imview_marked_clean_listener"))
+        new_ax_listener = listener(ax,"MarkedClean",update_fcn);
+        setappdata(ax,"imview_marked_clean_listener",new_ax_listener);
+    end    
 
     update_fcn();
 end
@@ -431,9 +459,11 @@ function updateZoomLevelDisplay(im,show_zoom_level)
 end
 
 function s = zoomLevelText(mag)
-    e = abs(mag(2) - mag(1)) / max(mag(1), mag(2));
-    if e < 1.5e-2
-        mag = mean(mag);
+    if ~isscalar(mag)
+        e = abs(mag(2) - mag(1)) / max(mag(1), mag(2));
+        if e < 1.5e-2
+            mag = mean(mag);
+        end
     end
     mag = round(round(mag,3,"significant"));
     s = sprintf(" %d%% ", mag);
