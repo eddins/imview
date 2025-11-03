@@ -252,15 +252,15 @@ function out = imview(A,map,options)
 end
 
 function installMarkedCleanHandler(im, ax, options)
+    imview_id = imvw.internal.uuid;
     if imvw.internal.liveEditorRunning
-        installMarkedCleanHandlerInLiveScript(im, ax, options)
+        installMarkedCleanHandlerInLiveScript(im, ax, options, imview_id)
     else
-        addMarkedCleanListenerCallbacks(im, ax, options);
+        addMarkedCleanListenerCallbacks(im, ax, options, imview_id);
     end
 end
 
-function installMarkedCleanHandlerInLiveScript(im, ~, options)
-    imview_id = imvw.internal.uuid;
+function installMarkedCleanHandlerInLiveScript(im, ~, options, imview_id)
     setappdata(im, "imview_id", imview_id);
     t = timer;
     t.StartDelay = 0.2;
@@ -312,15 +312,30 @@ function searchAndAddMarkedCleanListenerCallbacks(imview_id, options)
         if (fig.Tag == "EmbeddedFigure_Internal")
             if (getappdata(ii(k), "imview_id") == imview_id)
                 ax = ancestor(ii(k), "axes");
-                addMarkedCleanListenerCallbacks(ii(k), ax, options)
+                addMarkedCleanListenerCallbacks(ii(k), ax, options, imview_id)
+                addZoomLevelDisplayCallbacks(ii(k), ax, imview_id);
             end
         end
     end
 end
 
-function addMarkedCleanListenerCallbacks(im, ax, options)
+function addZoomLevelDisplayCallbacks(im, ax, imview_id)
+    tt = findobj(ax, "type", "text");
+    for k = 1:length(tt)
+        tk = tt(k);
+        imview_id_k = getappdata(tk,"imview_id");
+        if ~isempty(imview_id) && (imview_id == imview_id_k)
+            addlistener(tk,"EditingChanged",...
+                @(varargin) handleZoomLevelDisplayEdit(tk,im));
+            addlistener(tk,"Hit",...
+                @(varargin) enableEditing(tk));
+        end
+    end
+end
+
+function addMarkedCleanListenerCallbacks(im, ax, options,imview_id)
     update_fcn = @(~,~) updateImageDisplay(im, ...
-        options.ShowZoomLevel, options.Interpolation);
+        options.ShowZoomLevel, options.Interpolation,imview_id);
 
     if isempty(getappdata(im,"imview_marked_clean_listener"))
         new_im_listener = listener(im,"MarkedClean",update_fcn);
@@ -335,7 +350,7 @@ function addMarkedCleanListenerCallbacks(im, ax, options)
     update_fcn();
 end
 
-function updateImageDisplay(im, show_zoom_level, interpolation_mode)
+function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
     if ~ishandle(im)
         return
     end
@@ -368,7 +383,7 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode)
         setAxesCenterXY(axes_center, ax);
     end
 
-    updateZoomLevelDisplay(im,show_zoom_level)
+    updateZoomLevelDisplay(im,show_zoom_level,imview_id)
 end
 
 function ax = imageAxes(im)
@@ -394,8 +409,7 @@ end
 %%%     handleZoomLevelToolbarValueChange
 %%%
 
-function t = createZoomLevelDisplay(im,show_zoom_level)
-    s = struct("Image", im, "PostSetListener", []);
+function t = createZoomLevelDisplay(im,show_zoom_level,imview_id)
     t = text(1,1,"", ...
          BackgroundColor = uint8([200 200 200 200]), ...
          Color = "black", ...
@@ -403,24 +417,23 @@ function t = createZoomLevelDisplay(im,show_zoom_level)
          HorizontalAlignment = "right", ...
          VerticalAlignment = "bottom", ...
          Margin = 1, ...
-         ButtonDownFcn = @handleZoomLevelDisplayTextClick, ...
          Visible = show_zoom_level, ...
          Tag = "ZoomLevelDisplay", ...
-         UserData = s, ...
          Parent = imageAxes(im));
+
+    setappdata(t,"imview_id",imview_id);
+
+    addlistener(t,"EditingChanged",...
+        @(varargin) handleZoomLevelDisplayEdit(t,im));
+    addlistener(t,"Hit",...
+        @(varargin) enableEditing(t));
 end
 
-function handleZoomLevelDisplayTextClick(t,~)
-    t.UserData.PostSetListener = addlistener(t, "String", "PostSet", ...
-        @handleZoomLevelDisplayChange);
+function enableEditing(t)
     t.Editing = "on";
 end
 
-function handleZoomLevelDisplayChange(~,prop_event)
-    t = prop_event.AffectedObject;
-    delete(t.UserData.PostSetListener);
-    t.UserData.PostSetListener = [];
-    im = t.UserData.Image;
+function handleZoomLevelDisplayEdit(t,im)
     if ~isgraphics(im)
         t.String = "";
     else
@@ -432,7 +445,7 @@ function handleZoomLevelDisplayChange(~,prop_event)
             setImageZoomLevel(mag,im)
         end
         t.String = zoomLevelText(mag);
-    end
+    end    
 end
 
 function mag = zoomLevelFromString(s)
@@ -449,10 +462,10 @@ function mag = zoomLevelFromString(s)
     end
 end
 
-function updateZoomLevelDisplay(im,show_zoom_level)
+function updateZoomLevelDisplay(im,show_zoom_level,imview_id)
     t = findZoomLevelDisplay(im);
     if isempty(t)
-        t = createZoomLevelDisplay(im,show_zoom_level);
+        t = createZoomLevelDisplay(im,show_zoom_level,imview_id);
     end
     updateZoomLevelDisplayPosition(t,im);
     t.String = zoomLevelText(getImageZoomLevel(im));
