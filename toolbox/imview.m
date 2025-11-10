@@ -227,8 +227,6 @@ function out = imview(A,map,options)
     ax.YLimitMethod = "tight";
     ax.Visible = "off";
 
-    pixelgrid(im);
-
     switch options_p.Interpolation
         case "nearest"
             im.Interpolation = "nearest";
@@ -239,6 +237,8 @@ function out = imview(A,map,options)
             % nearest when the pixels get big enough.
             im.Interpolation = "bilinear";
     end
+
+    imvw.internal.addPixelGridGroup(ax,im);
 
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
 
@@ -365,10 +365,12 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
                 if ~strcmp(im.Interpolation,'nearest')
                     im.Interpolation = 'nearest';
                 end
+                setPixelGridVisibility(im,"on");
             else
                 if ~strcmp(im.Interpolation,'bilinear')
                     im.Interpolation = 'bilinear';
                 end
+                setPixelGridVisibility(im,"off");
             end
         end
     end
@@ -384,6 +386,13 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
     end
 
     updateZoomLevelDisplay(im,show_zoom_level,imview_id)
+end
+
+function setPixelGridVisibility(im,visible_state)
+    pg_grp = getappdata(im,"imview_pixel_grid");
+    if (~isempty(pg_grp) && isgraphics(pg_grp))
+        pg_grp.Visible = visible_state;
+    end
 end
 
 function ax = imageAxes(im)
