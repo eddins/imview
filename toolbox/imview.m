@@ -182,7 +182,7 @@ function out = imview(A,map,options)
 
     % Make sure that the needed add-on packages are present. Throw an error
     % if they are not.
-    verifyDependencies();
+    % verifyDependencies();
 
     % If image data, A, has been passed in as a filename or URL, then get
     % the real image data, colormap, and alpha data from the file or URL.
@@ -361,7 +361,7 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
                 im.Interpolation = 'nearest';
             end
         else
-            if any(getImagePixelExtentInches(im) >= 0.25)
+            if any(imvw.internal.getImagePixelExtentInches(im) >= 0.25)
                 if ~strcmp(im.Interpolation,'nearest')
                     im.Interpolation = 'nearest';
                 end
@@ -377,12 +377,12 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
 
     ax = imageAxes(im);
     if (ax.XLimMode == "auto") || (ax.YLimMode == "auto")
-        zoom_level = getImageZoomLevel(im);
-        axes_center = getAxesCenterXY(ax);
+        zoom_level = imvw.internal.getImageZoomLevel(im);
+        axes_center = imvw.internal.getAxesCenterXY(ax);
         ax.XLimMode = "auto";
         ax.YLimMode = "auto";
-        setImageZoomLevel(zoom_level, im);
-        setAxesCenterXY(axes_center, ax);
+        imvw.internal.setImageZoomLevel(zoom_level, im);
+        imvw.internal.setAxesCenterXY(axes_center, ax);
     end
 
     updateZoomLevelDisplay(im,show_zoom_level,imview_id)
@@ -449,9 +449,9 @@ function handleZoomLevelDisplayEdit(t,im)
         mag = zoomLevelFromString(t.String);
         if isempty(mag)
             % Invalid text field entry from user.
-            mag = getImageZoomLevel(im);
+            mag = imvw.internal.getImageZoomLevel(im);
         else
-            setImageZoomLevel(mag,im)
+            imvw.internal.setImageZoomLevel(mag,im)
         end
         t.String = zoomLevelText(mag);
     end    
@@ -477,7 +477,7 @@ function updateZoomLevelDisplay(im,show_zoom_level,imview_id)
         t = createZoomLevelDisplay(im,show_zoom_level,imview_id);
     end
     updateZoomLevelDisplayPosition(t,im);
-    t.String = zoomLevelText(getImageZoomLevel(im));
+    t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
 end
 
 function s = zoomLevelText(mag)
