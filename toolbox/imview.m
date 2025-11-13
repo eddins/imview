@@ -418,24 +418,18 @@ end
 %%%     handleZoomLevelToolbarValueChange
 %%%
 
-function t = createZoomLevelDisplay(im,show_zoom_level,imview_id)
-    t = text(1,1,"", ...
-         BackgroundColor = uint8([200 200 200 200]), ...
-         Color = "black", ...
-         FontSize = 10, ...
-         HorizontalAlignment = "right", ...
-         VerticalAlignment = "bottom", ...
-         Margin = 1, ...
-         Visible = show_zoom_level, ...
-         Tag = "ZoomLevelDisplay", ...
-         Parent = imageAxes(im));
+function ef = createZoomLevelDisplay(im,show_zoom_level)
+    ef = uieditfield(ancestor(im,"figure"),"text", ...
+        BackgroundColor = [200 200 200]/255, ...
+        FontColor = "black", ...
+        FontSize = 10, ...
+        Visible = show_zoom_level);
 
-    setappdata(t,"imview_id",imview_id);
+    setappdata(im,"imview_zoom_level_display",ef);
 
-    addlistener(t,"EditingChanged",...
-        @(varargin) handleZoomLevelDisplayEdit(t,im));
-    addlistener(t,"Hit",...
-        @(varargin) enableEditing(t));
+    addlistener(im,"ObjectBeingDestroyed",@(varargin) delete(ef));
+
+    addlistener(ef,"ValueChanged", @(varargin) handleZoomLevelDisplayEdit(ef,im));
 end
 
 function enableEditing(t)
@@ -446,14 +440,14 @@ function handleZoomLevelDisplayEdit(t,im)
     if ~isgraphics(im)
         t.String = "";
     else
-        mag = zoomLevelFromString(t.String);
+        mag = zoomLevelFromString(t.Value);
         if isempty(mag)
             % Invalid text field entry from user.
             mag = imvw.internal.getImageZoomLevel(im);
         else
             imvw.internal.setImageZoomLevel(mag,im)
         end
-        t.String = zoomLevelText(mag);
+        t.Value = zoomLevelText(mag);
     end    
 end
 
@@ -474,10 +468,10 @@ end
 function updateZoomLevelDisplay(im,show_zoom_level,imview_id)
     t = findZoomLevelDisplay(im);
     if isempty(t)
-        t = createZoomLevelDisplay(im,show_zoom_level,imview_id);
+        t = createZoomLevelDisplay(im,show_zoom_level);
     end
     updateZoomLevelDisplayPosition(t,im);
-    t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
+    t.Value = zoomLevelText(imvw.internal.getImageZoomLevel(im));
 end
 
 function s = zoomLevelText(mag)
@@ -492,35 +486,16 @@ function s = zoomLevelText(mag)
 end
 
 function t = findZoomLevelDisplay(im)
-    ax = imageAxes(im);
-    t = findobj(ax,"Tag","ZoomLevelDisplay");
-    if ~isempty(t)
-        t = t(1);
-    end
+    t = getappdata(im,"imview_zoom_level_display");
 end
 
 function updateZoomLevelDisplayPosition(t,im)
-    ax = imageAxes(im);
-    xdata = im.XData;
-    ydata = im.YData;
-    M = size(im.CData,1);
-    N = size(im.CData,2);
-    if (M == 1)
-        pixel_width = 1;
-    else
-        pixel_width = (xdata(end) - xdata(1))/(N - 1);
-    end
-    if (N == 1)
-        pixel_height = 1;
-    else
-        pixel_height = (ydata(end) - ydata(1))/(M - 1);
-    end
-    x = xdata(end) + pixel_width/2;
-    x = min(x,ax.XLim(2));
-    y = ydata(end) + pixel_height/2;
-    y = min(y,ax.YLim(2));
-    if ~isequal(t.Position(1:2), [x y])
-        t.Position(1:2) = [x y];
+    ax_position = imvw.internal.getObjectPixelPosition(imageAxes(im));
+    edit_position = t.Position;
+    new_left = ax_position(1) + ax_position(3) - edit_position(3);
+    new_bottom = ax_position(2);
+    if ~isequal(t.Position(1:2), [new_left new_bottom])
+        t.Position(1:2) = [new_left new_bottom];
     end
 end
 
