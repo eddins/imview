@@ -420,10 +420,12 @@ end
 
 function ef = createZoomLevelDisplay(im,show_zoom_level)
     ef = uieditfield(ancestor(im,"figure"),"text", ...
-        BackgroundColor = [200 200 200]/255, ...
+        BackgroundColor = [240 240 240]/255, ...
         FontColor = "black", ...
         FontSize = 10, ...
+        HorizontalAlignment = "right", ...
         Visible = show_zoom_level);
+    ef.Position(3) = 50;
 
     setappdata(im,"imview_zoom_level_display",ef);
 
@@ -490,10 +492,15 @@ function t = findZoomLevelDisplay(im)
 end
 
 function updateZoomLevelDisplayPosition(t,im)
-    ax_position = imvw.internal.getObjectPixelPosition(imageAxes(im));
+    [image_right, image_bottom] = ...
+        imvw.internal.imageBottomRightInViewLocation(im);
+
     edit_position = t.Position;
-    new_left = ax_position(1) + ax_position(3) - edit_position(3);
-    new_bottom = ax_position(2);
+    new_left = image_right - edit_position(3);
+    new_bottom = image_bottom;
+
+    new_left = new_left + 1;
+    new_bottom = new_bottom + 1;
     if ~isequal(t.Position(1:2), [new_left new_bottom])
         t.Position(1:2) = [new_left new_bottom];
     end
@@ -553,16 +560,17 @@ end
 function handleZoomLevelToolbarValueChange(btn,event)
     tb = btn.Parent;
     ax = tb.Parent;
-    txt = findobj(ax, "Tag", "ZoomLevelDisplay");
-    if isempty(txt)
-        return
+    images = findobj(ax, "type", "image");
+    for k = 1:length(images)
+        t = getappdata(images(k),"imview_zoom_level_display");
+        if isgraphics(t)
+            t.Visible = event.Value;
+        end
     end
 
     if event.Value
-        txt.Visible = "on";
         btn.Tooltip = "Hide zoom-level display";
     else
-        txt.Visible = "off";
         btn.Tooltip = "Show zoom-level display";
     end
 end
