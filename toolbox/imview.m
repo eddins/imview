@@ -263,76 +263,6 @@ function addInteractiveFeatures(im, ax, options_p)
     setappdata(ax,"imview_marked_clean_listener",new_ax_listener);
 end
 
-function installMarkedCleanHandler(im, ax, options)
-    imview_id = imvw.internal.uuid;
-    if imvw.internal.liveEditorRunning
-        installMarkedCleanHandlerInLiveScript(im, ax, options, imview_id)
-    else
-        addMarkedCleanListenerCallbacks(im, ax, options, imview_id);
-    end
-end
-
-function installMarkedCleanHandlerInLiveScript(im, ~, options, imview_id)
-    setappdata(im, "imview_id", imview_id);
-    t = timer;
-    t.StartDelay = 0.5;
-    t.Period = 0.5;
-    t.ExecutionMode = "fixedSpacing";
-    t.TimerFcn = @(t,~) handleTimerExecution(t, imview_id, options);
-    addlistener(im,"ObjectBeingDestroyed",@(varargin) stopAndDeleteTimer(t));
-    t.start();
-end
-
-function handleTimerExecution(t, imview_id, options)
-    searchAndAddMarkedCleanListenerCallbacks(imview_id, options);
-
-    if t.TasksExecuted == 4
-        % After 2 seconds, poll every 2 seconds
-        changeTimerPeriod(t,2);
-
-    elseif t.TasksExecuted == 8
-        % After 10 seconds, poll every 5 seconds.
-        changeTimerPeriod(t,5);
-
-    elseif t.TasksExecuted == 20
-        % After 60 seconds, poll every 10 seconds.
-        changeTimerPeriod(t,10);
-
-    elseif t.TasksExecuted == 44
-        % After 5 minutes, stop polling.
-        stopAndDeleteTimer(t);
-    end
-end
-
-function changeTimerPeriod(t,new_period)
-    t.stop();
-    t.Period = new_period;
-    t.start();
-end
-
-function stopAndDeleteTimer(t)
-    if isvalid(t)
-        t.stop();
-        t.delete();
-    end
-end
-
-function addMarkedCleanListenerCallbacks(im, ax, options,imview_id)
-    update_fcn = @(~,~) updateImageDisplay(im, options.Interpolation);
-
-    if isempty(getappdata(im,"imview_marked_clean_listener"))
-        new_im_listener = listener(im,"MarkedClean",update_fcn);
-        setappdata(im,"imview_marked_clean_listener",new_im_listener);
-    end
-
-    if isempty(getappdata(ax,"imview_marked_clean_listener"))
-        new_ax_listener = listener(ax,"MarkedClean",update_fcn);
-        setappdata(ax,"imview_marked_clean_listener",new_ax_listener);
-    end    
-
-    update_fcn();
-end
-
 function updateImageDisplay(im, interpolation_mode)
     if ~ishandle(im)
         return
@@ -614,32 +544,6 @@ function [A,map,alpha] = processImageData(A,map,alpha)
             error(id, message, A)
         end
     end
-end
-
-function verifyDependencies
-    try
-        needs_updated_imzm = ~imzm.version.hasCapability("units_fix");
-    catch
-        needs_updated_imzm = true;
-    end
-    if needs_updated_imzm
-        error("imview:NeedIMZM",...
-            "Missing or outdated add-on ""Image Zoom and Pan Utilities"". " + ...
-            "Download and install the latest version from " + ...
-            "https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities.")
-    end
-
-    try
-        needs_updated_pg = ~pg.version.hasCapability("threshold_change_2.0.2");
-    catch
-        needs_updated_pg = true;
-    end
-    if needs_updated_pg
-        error("imview:NeedPixelGrid",...
-            "Missing or outdated add-on ""Pixel Grid"". " + ...
-            "Download and install the latest version from " + ...
-            "https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid.")
-    end    
 end
 
 function mustBeValidXYData(data)
