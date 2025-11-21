@@ -238,17 +238,21 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    imvw.internal.addPixelGridGroup(ax,im);
-
-    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
-
-    installMarkedCleanHandler(im, ax, options_p);
+    addInteractiveFeatures(im, ax, options_p);
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
     if nargout > 0
         out = im;
     end
+end
+
+function addInteractiveFeatures(im, ax, options_p)
+    imvw.internal.addPixelGridGroup(ax,im);
+
+    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
+    
+    installMarkedCleanHandler(im, ax, options_p);    
 end
 
 function installMarkedCleanHandler(im, ax, options)
