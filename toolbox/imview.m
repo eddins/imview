@@ -413,10 +413,6 @@ function ef = createZoomLevelDisplay(im,show_zoom_level)
     addlistener(ef,"ValueChanged", @(varargin) handleZoomLevelDisplayEdit(ef,im));
 end
 
-function enableEditing(t)
-    t.Editing = "on";
-end
-
 function handleZoomLevelDisplayEdit(t,im)
     if ~isgraphics(im)
         t.String = "";
