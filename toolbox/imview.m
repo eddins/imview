@@ -250,11 +250,17 @@ end
 function addInteractiveFeatures(im, ax, options_p)
     imvw.internal.addPixelGridGroup(ax,im);
 
-    createZoomLevelDisplay(im, options_p.ShowZoomLevel)    
+    createZoomLevelDisplay(im, options_p.ShowZoomLevel);
 
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
-    
-    installMarkedCleanHandler(im, ax, options_p);    
+
+    update_fcn = @(~,~) updateImageDisplay(im, options_p.Interpolation);
+
+    new_im_listener = listener(im,"MarkedClean",update_fcn);
+    setappdata(im,"imview_marked_clean_listener",new_im_listener);
+
+    new_ax_listener = listener(ax,"MarkedClean",update_fcn);
+    setappdata(ax,"imview_marked_clean_listener",new_ax_listener);
 end
 
 function installMarkedCleanHandler(im, ax, options)
@@ -312,8 +318,7 @@ function stopAndDeleteTimer(t)
 end
 
 function addMarkedCleanListenerCallbacks(im, ax, options,imview_id)
-    update_fcn = @(~,~) updateImageDisplay(im, ...
-        options.ShowZoomLevel, options.Interpolation,imview_id);
+    update_fcn = @(~,~) updateImageDisplay(im, options.Interpolation);
 
     if isempty(getappdata(im,"imview_marked_clean_listener"))
         new_im_listener = listener(im,"MarkedClean",update_fcn);
@@ -328,7 +333,7 @@ function addMarkedCleanListenerCallbacks(im, ax, options,imview_id)
     update_fcn();
 end
 
-function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
+function updateImageDisplay(im, interpolation_mode)
     if ~ishandle(im)
         return
     end
