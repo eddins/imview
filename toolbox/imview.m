@@ -263,8 +263,8 @@ end
 function installMarkedCleanHandlerInLiveScript(im, ~, options, imview_id)
     setappdata(im, "imview_id", imview_id);
     t = timer;
-    t.StartDelay = 0.2;
-    t.Period = 0.2;
+    t.StartDelay = 0.5;
+    t.Period = 0.5;
     t.ExecutionMode = "fixedSpacing";
     t.TimerFcn = @(t,~) handleTimerExecution(t, imview_id, options);
     addlistener(im,"ObjectBeingDestroyed",@(varargin) stopAndDeleteTimer(t));
@@ -274,19 +274,19 @@ end
 function handleTimerExecution(t, imview_id, options)
     searchAndAddMarkedCleanListenerCallbacks(imview_id, options);
 
-    if t.TasksExecuted == 10
-        % After 2 seconds, poll every 0.5 seconds
-        changeTimerPeriod(t,0.5);
-
-    elseif t.TasksExecuted == 26
-        % After 10 seconds, poll every second.
-        changeTimerPeriod(t,1);
-
-    elseif t.TasksExecuted == 76
-        % After 60 seconds, poll every 2 seconds.
+    if t.TasksExecuted == 4
+        % After 2 seconds, poll every 2 seconds
         changeTimerPeriod(t,2);
 
-    elseif t.TasksExecuted == 196
+    elseif t.TasksExecuted == 8
+        % After 10 seconds, poll every 5 seconds.
+        changeTimerPeriod(t,5);
+
+    elseif t.TasksExecuted == 20
+        % After 60 seconds, poll every 10 seconds.
+        changeTimerPeriod(t,10);
+
+    elseif t.TasksExecuted == 44
         % After 5 minutes, stop polling.
         stopAndDeleteTimer(t);
     end
