@@ -250,6 +250,8 @@ end
 function addInteractiveFeatures(im, ax, options_p)
     imvw.internal.addPixelGridGroup(ax,im);
 
+    createZoomLevelDisplay(im, options_p.ShowZoomLevel)    
+
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
     
     installMarkedCleanHandler(im, ax, options_p);    
@@ -309,34 +311,6 @@ function stopAndDeleteTimer(t)
     end
 end
 
-function searchAndAddMarkedCleanListenerCallbacks(imview_id, options)
-    ii = findall(groot, "type", "image");
-    for k = 1:length(ii)
-        fig = ancestor(ii(k), "figure");
-        if (fig.Tag == "EmbeddedFigure_Internal")
-            if (getappdata(ii(k), "imview_id") == imview_id)
-                ax = ancestor(ii(k), "axes");
-                addMarkedCleanListenerCallbacks(ii(k), ax, options, imview_id)
-                addZoomLevelDisplayCallbacks(ii(k), ax, imview_id);
-            end
-        end
-    end
-end
-
-function addZoomLevelDisplayCallbacks(im, ax, imview_id)
-    tt = findobj(ax, "type", "text");
-    for k = 1:length(tt)
-        tk = tt(k);
-        imview_id_k = getappdata(tk,"imview_id");
-        if ~isempty(imview_id) && (imview_id == imview_id_k)
-            addlistener(tk,"EditingChanged",...
-                @(varargin) handleZoomLevelDisplayEdit(tk,im));
-            addlistener(tk,"Hit",...
-                @(varargin) enableEditing(tk));
-        end
-    end
-end
-
 function addMarkedCleanListenerCallbacks(im, ax, options,imview_id)
     update_fcn = @(~,~) updateImageDisplay(im, ...
         options.ShowZoomLevel, options.Interpolation,imview_id);
@@ -389,7 +363,7 @@ function updateImageDisplay(im, show_zoom_level, interpolation_mode, imview_id)
         imvw.internal.setAxesCenterXY(axes_center, ax);
     end
 
-    updateZoomLevelDisplay(im,show_zoom_level,imview_id)
+    updateZoomLevelDisplay(im)
 end
 
 function setPixelGridVisibility(im,visible_state)
@@ -428,7 +402,8 @@ function ef = createZoomLevelDisplay(im,show_zoom_level)
         FontColor = "black", ...
         FontSize = 10, ...
         HorizontalAlignment = "right", ...
-        Visible = show_zoom_level);
+        Visible = show_zoom_level, ...
+        Tag = "imview");
     ef.Position(3) = 50;
 
     setappdata(im,"imview_zoom_level_display",ef);
@@ -471,10 +446,10 @@ function mag = zoomLevelFromString(s)
     end
 end
 
-function updateZoomLevelDisplay(im,show_zoom_level,imview_id)
+function updateZoomLevelDisplay(im)
     t = findZoomLevelDisplay(im);
-    if isempty(t)
-        t = createZoomLevelDisplay(im,show_zoom_level);
+    if isempty(t) || ~isgraphics(t)
+        return
     end
     updateZoomLevelDisplayPosition(t,im);
     t.Value = zoomLevelText(imvw.internal.getImageZoomLevel(im));
