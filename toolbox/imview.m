@@ -256,11 +256,11 @@ function addInteractiveFeatures(im, ax, options_p)
 
     update_fcn = @(~,~) updateImageDisplay(im, options_p.Interpolation);
 
-    new_im_listener = listener(im,"MarkedClean",update_fcn);
-    setappdata(im,"imview_marked_clean_listener",new_im_listener);
+    addlistener(im, "MarkedClean", update_fcn);
 
-    new_ax_listener = listener(ax,"MarkedClean",update_fcn);
-    setappdata(ax,"imview_marked_clean_listener",new_ax_listener);
+    new_ax_listener = listener(ax, "MarkedClean", update_fcn);
+    % Delete the axes MarkedClean listener if the image gets deleted.
+    addlistener(im, "ObjectBeingDestroyed", @(varargin) delete(new_ax_listener));
 end
 
 function updateImageDisplay(im, interpolation_mode)
