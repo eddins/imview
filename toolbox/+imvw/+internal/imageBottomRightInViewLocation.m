@@ -13,8 +13,8 @@ function [right, bottom] = imageBottomRightInViewLocation(im)
     left = xlim(1);
     right = xlim(2);
     p = polyfit([left right], [ax_position(1) ax_position(1)+ax_position(3)], 1);
-    right = polyval(p, image_x_bounds(2))
-    right = min(right, ax_position(1) + ax_position(3))
+    right = polyval(p, image_x_bounds(2));
+    right = min(right, ax_position(1) + ax_position(3));
 
     ydata = im.YData;
     if M == 1
