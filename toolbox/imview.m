@@ -380,21 +380,6 @@ function handleZoomLevelDisplayChange(~,prop_event)
     end
 end
 
-function handleZoomLevelDisplayEdit(t,im)
-    if ~isgraphics(im)
-        t.String = "";
-    else
-        mag = zoomLevelFromString(t.Value);
-        if isempty(mag)
-            % Invalid text field entry from user.
-            mag = imvw.internal.getImageZoomLevel(im);
-        else
-            imvw.internal.setImageZoomLevel(mag,im)
-        end
-        t.Value = zoomLevelText(mag);
-    end    
-end
-
 function mag = zoomLevelFromString(s)
     s = replace(s, "%", "");
     mag = sscanf(s, "%f");
