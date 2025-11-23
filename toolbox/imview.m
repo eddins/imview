@@ -218,6 +218,9 @@ function out = imview(A,map,options)
             ax.CLim = [0 1];
     end
 
+    imview_id = imvw.internal.uuid;
+    setappdata(im, "imview_id", imview_id);
+
     % Additional axes property side effects.
     ax.DataAspectRatio = [1 1 1];
     ax.YDir = "reverse";
@@ -238,7 +241,7 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    addInteractiveFeatures(im, ax, options_p);
+    addInteractiveFeatures(im, ax, imview_id, options_p);
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
@@ -247,10 +250,10 @@ function out = imview(A,map,options)
     end
 end
 
-function addInteractiveFeatures(im, ax, options_p)
-    imvw.internal.addPixelGridGroup(ax,im);
+function addInteractiveFeatures(im, ax, imview_id, options_p)
+    imvw.internal.addPixelGridGroup(ax, im, imview_id);
 
-    createZoomLevelDisplay(im, options_p.ShowZoomLevel);
+    createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
 
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
 
@@ -331,21 +334,50 @@ end
 %%%     handleZoomLevelToolbarValueChange
 %%%
 
-function ef = createZoomLevelDisplay(im,show_zoom_level)
-    ef = uieditfield(ancestor(im,"figure"),"text", ...
-        BackgroundColor = [240 240 240]/255, ...
-        FontColor = "black", ...
-        FontSize = 10, ...
-        HorizontalAlignment = "right", ...
-        Visible = show_zoom_level, ...
-        Tag = "imview");
-    ef.Position(3) = 50;
+function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
+    t = text(50, 50, "hello", ...
+         BackgroundColor = uint8([240 240 240]), ...
+         Color = "black", ...
+         EdgeColor = uint8([200 200 200]), ...
+         FontSize = 8, ...
+         HorizontalAlignment = "right", ...
+         VerticalAlignment = "bottom", ...
+         Margin = 1, ...
+         Visible = show_zoom_level, ...
+         Tag = "imview", ...
+         Interactions = editInteraction, ...
+         Parent = imageAxes(im));
+    setappdata(t, "imview_id", imview_id);
 
-    setappdata(im,"imview_zoom_level_display",ef);
+    addlistener(t, "String", "PostSet", @handleZoomLevelDisplayChange);
 
-    addlistener(im,"ObjectBeingDestroyed",@(varargin) delete(ef));
+    addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(t));
+end
 
-    addlistener(ef,"ValueChanged", @(varargin) handleZoomLevelDisplayEdit(ef,im));
+function handleZoomLevelDisplayChange(~,prop_event)
+    t = prop_event.AffectedObject;
+    imview_id = getappdata(t, "imview_id");
+    ax = ancestor(t, "axes");
+    ii = findobj(ax, "type", "image");
+    im = [];
+    for k = 1:length(ii)
+        if getappdata(ii(k), "imview_id") == imview_id
+            im = ii(k);
+            break
+        end
+    end
+    if ~isgraphics(im)
+        t.String = "";
+    else
+        mag = zoomLevelFromString(t.String);
+        if isempty(mag)
+            % Invalid text field entry from user.
+            mag = getImageZoomLevel(im);
+        else
+            setImageZoomLevel(mag,im)
+        end
+        t.String = zoomLevelText(mag);
+    end
 end
 
 function handleZoomLevelDisplayEdit(t,im)
@@ -383,7 +415,7 @@ function updateZoomLevelDisplay(im)
         return
     end
     updateZoomLevelDisplayPosition(t,im);
-    t.Value = zoomLevelText(imvw.internal.getImageZoomLevel(im));
+    t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
 end
 
 function s = zoomLevelText(mag)
@@ -398,22 +430,36 @@ function s = zoomLevelText(mag)
 end
 
 function t = findZoomLevelDisplay(im)
-    t = getappdata(im,"imview_zoom_level_display");
+    ax = imageAxes(im);
+    imview_id = getappdata(im, "imview_id");
+    tt = findobj(ax, "type", "text", "Tag", "imview");
+    t = [];
+    for k = 1:length(tt)
+        if getappdata(tt(k), "imview_id") == imview_id
+            t = tt(k);
+            break
+        end
+    end
 end
 
 function updateZoomLevelDisplayPosition(t,im)
-    [image_right, image_bottom] = ...
-        imvw.internal.imageBottomRightInViewLocation(im);
-
-    edit_position = t.Position;
-    new_left = image_right - edit_position(3);
-    new_bottom = image_bottom;
-
-    new_left = new_left + 1;
-    new_bottom = new_bottom + 1;
-    if ~isequal(t.Position(1:2), [new_left new_bottom])
-        t.Position(1:2) = [new_left new_bottom];
+    ax = imageAxes(im);
+    xdata = im.XData;
+    xlim = ax.XLim;
+    if ax.XDir == "normal"
+        new_left = min(xdata(2), xlim(2));
+    else
+        new_left = max(xdata(1), xlim(1));
     end
+
+    ydata = im.YData;
+    ylim = ax.YLim;
+    if ax.YDir == "reverse"
+        new_bottom = min(ydata(2), ylim(2));
+    else
+        new_bottom = max(ydata(1), ylim(1));
+    end
+    t.Position(1:2) = [new_left new_bottom];
 end
 
 function tf = showZoomLevelSetting
@@ -470,13 +516,8 @@ end
 function handleZoomLevelToolbarValueChange(btn,event)
     tb = btn.Parent;
     ax = tb.Parent;
-    images = findobj(ax, "type", "image");
-    for k = 1:length(images)
-        t = getappdata(images(k),"imview_zoom_level_display");
-        if isgraphics(t)
-            t.Visible = event.Value;
-        end
-    end
+    t = findobj(ax, "type", "text", "Tag", "imview");
+    set(t, "Visible", event.Value);
 
     if event.Value
         btn.Tooltip = "Hide zoom-level display";
