@@ -4,7 +4,4 @@ function grp = addPixelGridGroup(ax, im, imview_id)
     grp = imvw.internal.pixelGridGroup(ax, xv, yv);
     grp.Tag = "imview";
     setappdata(grp, "imview_id", imview_id);
-
-    % Delete the pixel grid group when the image object gets deleted.
-    addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(grp));
 end

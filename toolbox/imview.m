@@ -241,7 +241,13 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    addInteractiveFeatures(im, ax, imview_id, options_p);
+    addHelpers(im, ax, imview_id, options_p);
+
+    connectHelpers(im);
+
+    if imvw.internal.liveEditorRunning()
+        listenForClonedFigures(im);
+    end
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
@@ -250,12 +256,54 @@ function out = imview(A,map,options)
     end
 end
 
-function addInteractiveFeatures(im, ax, imview_id, options_p)
+function listenForClonedFigures(im)
+    fig = ancestor(im, "figure");
+    imview_id = getappdata(im, "imview_id");
+    eavesdropper = listener(groot, "ChildAdded", ...
+        @(~, new_child_data) connectHelpersInFigureClone(fig, imview_id));
+    setappdata(im, "imview_figure_clone_listener", eavesdropper);
+end
+
+function addHelpers(im, ax, imview_id, options_p)
     imvw.internal.addPixelGridGroup(ax, im, imview_id);
-
     createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
+    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
+end
 
-    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);
+function connectHelpers(im)
+    % Delete the pixel grid group when the image object gets deleted.
+    pixel_grid = imvw.internal.findPixelGrid(im);
+    if isgraphics(pixel_grid)
+        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(pixel_grid));
+    end
+
+    zdisp = imvw.internal.findZoomLevelDisplay(im);
+    if isgraphics(zdisp)
+        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
+    end    
+end
+
+function connectHelpersInFigureClone(fig, imview_id)
+    disp("Inside connectHelpersInFigureClone")
+    fig
+    imview_id
+    ii = findobj(fig, "type", "image");
+    im = [];
+    for k = 1:length(ii)
+        ii_k = ii(k);
+        if (getappdata(ii_k, "imview_id") == imview_id)
+            im = ii_k;
+            break
+        end
+    end
+
+    im
+    connectHelpers(im);
+end
+
+function addInteractiveFeatures(im, ax, imview_id, options_p)
+
+
 
     update_fcn = @(~,~) updateImageDisplay(im, options_p.Interpolation);
 
@@ -305,7 +353,15 @@ function updateImageDisplay(im, interpolation_mode)
 end
 
 function setPixelGridVisibility(im,visible_state)
-    pg_grp = getappdata(im,"imview_pixel_grid");
+    ax = imageAxes(im);
+    gg = findobj(ax, "Tag", "imview");
+    pg_grp = [];
+    for k = 1:length(gg)
+        if getappdata(gg(k), "imview_id") == getappdata(im, "imview_id")
+            pg_grp = gg(k);
+            break
+        end
+    end
     if (~isempty(pg_grp) && isgraphics(pg_grp))
         pg_grp.Visible = visible_state;
     end
@@ -348,10 +404,6 @@ function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
          Interactions = editInteraction, ...
          Parent = imageAxes(im));
     setappdata(t, "imview_id", imview_id);
-
-    addlistener(t, "String", "PostSet", @handleZoomLevelDisplayChange);
-
-    addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(t));
 end
 
 function handleZoomLevelDisplayChange(~,prop_event)
