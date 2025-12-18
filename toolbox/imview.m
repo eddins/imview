@@ -180,9 +180,7 @@ function out = imview(A,map,options)
         options.SpatialReference (1,1) imref2d
     end
 
-    % Make sure that the needed add-on packages are present. Throw an error
-    % if they are not.
-    % verifyDependencies();
+    prepareLiveEditorUse();
 
     % If image data, A, has been passed in as a filename or URL, then get
     % the real image data, colormap, and alpha data from the file or URL.
@@ -199,7 +197,9 @@ function out = imview(A,map,options)
 
     ax = options_p.Parent;
     im = image(CData = A, Parent = ax, ...
-        AlphaData = options_p.AlphaData);
+        AlphaData = options_p.AlphaData, ...
+        Tag = "imview");
+    setappdata(im, "imview_interpolation_method", options_p.Interpolation);
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
@@ -245,10 +245,6 @@ function out = imview(A,map,options)
 
     connectHelpers(im);
 
-    if imvw.internal.liveEditorRunning()
-        listenForClonedFigures(im);
-    end
-
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
     if nargout > 0
@@ -256,12 +252,71 @@ function out = imview(A,map,options)
     end
 end
 
-function listenForClonedFigures(im)
-    fig = ancestor(im, "figure");
-    imview_id = getappdata(im, "imview_id");
-    eavesdropper = listener(groot, "ChildAdded", ...
-        @(~, new_child_data) connectHelpersInFigureClone(fig, imview_id));
-    setappdata(im, "imview_figure_clone_listener", eavesdropper);
+function prepareLiveEditorUse()
+    imvw.internal.log("Preparing for Live Editor Use.");
+    if imvw.internal.liveEditorRunning()
+        instrumentLiveEditorFigurePool();
+        r = groot;
+        appdata_listener_name = "imview_groot_child_added_listener";
+        imvw.internal.log("Live Editor is running.");
+        if isempty(getappdata(r, appdata_listener_name))
+            imvw.internal.log("Creating ChildAdded listener for graphics root.");
+            ell = listener(r, "ChildAdded", @respondToRootChildAdded);
+            setappdata(r, appdata_listener_name, ell);
+        else
+            imvw.internal.log("Graphics Root already has imview ChildAdded listener.");
+        end
+    else
+        imvw.internal.log("Live Editor is not running.");
+    end
+end
+
+function respondToRootChildAdded(~, event_data)
+    imvw.internal.log("Graphics root ChildAdded event. Child:");
+    imvw.internal.log(formattedDisplayText(event_data.Child));
+    fig = event_data.Child;
+    if (fig.Tag == "EmbeddedFigure_Internal") && ~fig.Visible && isempty(fig.editorID)
+        instrumentLiveEditorFigurePool(fig);
+    end
+end
+
+function instrumentLiveEditorFigurePool(ff)
+    if nargin < 1
+        imvw.internal.log("Getting live editor pool figures.");
+        ff = imvw.internal.getLiveEditorFigurePool;
+    end
+    imvw.internal.log(sprintf("Instrumenting %d live editor pool figures.", length(ff)));
+    appdata_listener_name = "imview_figure_visibility_changed_listener";
+    
+    for k = 1:length(ff)
+        if isempty(getappdata(ff(k), appdata_listener_name))
+            ell = listener(ff(k), "Visible", "PostSet", ...
+                @respondToPoolFigureVisibilityChange);
+            setappdata(ff(k), appdata_listener_name, ell);
+            imvw.internal.log("Added pool figure visibility change listener.");
+        else
+            imvw.internal.log("Pool figure already has visibility change listener.");
+        end
+    end
+end
+
+function respondToPoolFigureVisibilityChange(~, event_data)
+    fig = event_data.AffectedObject;
+    if fig.Visible
+        imvw.internal.log("Pool figure has become visible.");
+        if ~isempty(fig.editorID)
+            imvw.internal.log("Pool figure has been assigned editor ID: " + fig.editorID);
+            imm = findobj(fig, "type", "image", "Tag", "imview");
+            imvw.internal.log(sprintf("Activated pool figure has %d imview images.", length(imm)));
+            for k = 1:length(imm)
+                connectHelpers(imm(k));
+            end
+        else
+            imvw.internal.log("Pool figure has no editor ID.");
+        end
+    else
+        imvw.internal.log("Pool figure has become invisible.");
+    end
 end
 
 function addHelpers(im, ax, imview_id, options_p)
@@ -281,37 +336,15 @@ function connectHelpers(im)
     if isgraphics(zdisp)
         addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
     end    
-end
 
-function connectHelpersInFigureClone(fig, imview_id)
-    disp("Inside connectHelpersInFigureClone")
-    fig
-    imview_id
-    ii = findobj(fig, "type", "image");
-    im = [];
-    for k = 1:length(ii)
-        ii_k = ii(k);
-        if (getappdata(ii_k, "imview_id") == imview_id)
-            im = ii_k;
-            break
-        end
-    end
-
-    im
-    connectHelpers(im);
-end
-
-function addInteractiveFeatures(im, ax, imview_id, options_p)
-
-
-
-    update_fcn = @(~,~) updateImageDisplay(im, options_p.Interpolation);
-
+    interpolation_method = getappdata(im, "imview_interpolation_method");
+    update_fcn = @(~,~) updateImageDisplay(im, interpolation_method);  
     addlistener(im, "MarkedClean", update_fcn);
-
-    new_ax_listener = listener(ax, "MarkedClean", update_fcn);
+    new_ax_listener = listener(ancestor(im, "axes"), "MarkedClean", update_fcn);
     % Delete the axes MarkedClean listener if the image gets deleted.
-    addlistener(im, "ObjectBeingDestroyed", @(varargin) delete(new_ax_listener));
+    addlistener(im, "ObjectBeingDestroyed", @(varargin) delete(new_ax_listener)); 
+
+    update_fcn();
 end
 
 function updateImageDisplay(im, interpolation_mode)
@@ -354,7 +387,7 @@ end
 
 function setPixelGridVisibility(im,visible_state)
     ax = imageAxes(im);
-    gg = findobj(ax, "Tag", "imview");
+    gg = findobj(ax, "type", "hggroup", "Tag", "imview");
     pg_grp = [];
     for k = 1:length(gg)
         if getappdata(gg(k), "imview_id") == getappdata(im, "imview_id")
@@ -404,13 +437,13 @@ function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
          Interactions = editInteraction, ...
          Parent = imageAxes(im));
     setappdata(t, "imview_id", imview_id);
+    addlistener(t, "EditingChanged", @handleZoomLevelDisplayChange);
 end
 
-function handleZoomLevelDisplayChange(~,prop_event)
-    t = prop_event.AffectedObject;
+function handleZoomLevelDisplayChange(t,~)
     imview_id = getappdata(t, "imview_id");
     ax = ancestor(t, "axes");
-    ii = findobj(ax, "type", "image");
+    ii = findobj(ax, "type", "image", "Tag", "imview");
     im = [];
     for k = 1:length(ii)
         if getappdata(ii(k), "imview_id") == imview_id
