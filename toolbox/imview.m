@@ -140,28 +140,9 @@
 %
 %   LIMITATIONS
 %
-%   When running inside a live script, the pixel grid visibility and the
-%   image interpolation method will not automatically adjust when zooming
-%   interactively using the axes toolbar. Also, if you pan interactively
-%   using the axes toolbar, the zoom-level display text may move while you
-%   pan. To update the pixel grid, interpolation method, and the zoom-level
-%   display after zooming or panning using the axes toolbar, press the
-%   "Update Code" button and then execute the script or code section again.
-%
 %   When using a PNG file's pixel transparency, IMVIEW does not read or use
 %   the background color contained in the file, so the appearance may be
 %   different from the PNG creator's intent.
-%
-%   REQUIRED ADD-ONS
-%
-%   The function IMVIEW requires the following add-ons that are available
-%   from the MATLAB File Exchange:
-%
-%   - Pixel Grid 
-%     https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid
-%
-%   - Image Zoom Level and Pan Utilities
-%     https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities
 %
 %   See also imshow, image, pixelgrid, setImageZoomLevel, zoomImage
 
