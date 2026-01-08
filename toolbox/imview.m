@@ -199,8 +199,7 @@ function out = imview(A,map,options)
             ax.CLim = [0 1];
     end
 
-    imview_id = imvw.internal.uuid;
-    setappdata(im, "imview_id", imview_id);
+    setImviewID(im);
 
     % Additional axes property side effects.
     ax.DataAspectRatio = [1 1 1];
@@ -222,7 +221,7 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    addHelpers(im, ax, imview_id, options_p);
+    addHelpers(im, ax, options_p);
 
     connectHelpers(im);
 
@@ -231,6 +230,15 @@ function out = imview(A,map,options)
     if nargout > 0
         out = im;
     end
+end
+
+function setImviewID(im)
+    imview_id = imvw.internal.uuid;
+    setappdata(im, "imview_id", imview_id);
+end
+
+function imview_id = getImviewID(im)
+    imview_id = getappdata(im, "imview_id");
 end
 
 function prepareLiveEditorUse()
@@ -300,7 +308,8 @@ function respondToPoolFigureVisibilityChange(~, event_data)
     end
 end
 
-function addHelpers(im, ax, imview_id, options_p)
+function addHelpers(im, ax, options_p)
+    imview_id = getImviewID(im);
     imvw.internal.addPixelGridGroup(ax, im, imview_id);
     createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
