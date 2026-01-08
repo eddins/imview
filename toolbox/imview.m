@@ -221,15 +221,18 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    addHelpers(im, ax, options_p);
-
-    connectHelpers(im);
+    addInteractiveBehaviors(im, ax, options_p);
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
     if nargout > 0
         out = im;
     end
+end
+
+function addInteractiveBehaviors(im, ax, options)
+    addHelpers(im, ax, options);
+    connectHelpers(im);
 end
 
 function setImviewID(im)
