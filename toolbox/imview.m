@@ -230,9 +230,68 @@ function out = imview(A,map,options)
     end
 end
 
+%%%
+%%% INTERACTIVE BEHAVIOR INITIALIZATION
+%%%
+%%% Interactive behaviors include:
+%%%
+%%%   - Changing the image interpolation method depending on the physical
+%%%     pixel size.
+%%%   - Showing or hiding the pixel grid depending on the physical pixel
+%%%     size.
+%%%   - Showing the current zoom level as text at the lower right of the
+%%%     image. 
+%%%   - Changing the current zoom level by editing the zoom level text.
+%%%   - Showing and hiding teh current zoom level display using a button in
+%%%     the axes toolbar.
+%%%
+%%% Architecturally, the creation of the various graphics objects
+%%% associated with interactive behavior (pixel grid, text object, axes
+%%% toolbar button) has been separated from wiring up those objects to
+%%% respond to various events. The separate steps are represented by the
+%%% two functions addHelpers and connectHelpers.
+%%%
+%%% The steps are separated this way to facilitate Live Editor support. In
+%%% the live editor, the helper objects need to be created when IMVIEW is
+%%% called so that they will get copied into Live Editor embedded clone
+%%% figures later, asynchronously. The correct wiring up of objects and
+%%% event listeners can't happen until the Live Editor embedded figure gets
+%%% cloned, at which point connectHelpers can be called on the embedded
+%%% figure.
+%%%
+
 function addInteractiveBehaviors(im, ax, options)
     addHelpers(im, ax, options);
     connectHelpers(im);
+end
+
+function addHelpers(im, ax, options_p)
+    imview_id = getImviewID(im);
+    imvw.internal.addPixelGridGroup(ax, im, imview_id);
+    createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
+    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
+end
+
+function connectHelpers(im)
+    % Delete the pixel grid group when the image object gets deleted.
+    pixel_grid = imvw.internal.findPixelGrid(im);
+    if isgraphics(pixel_grid)
+        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(pixel_grid));
+    end
+
+    zdisp = imvw.internal.findZoomLevelDisplay(im);
+    if isgraphics(zdisp)
+        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
+    end    
+
+    interpolation_method = getappdata(im, "imview_interpolation_method");
+    update_fcn = @(~,~) updateImageDisplay(im, interpolation_method);  
+    addlistener(im, "MarkedClean", update_fcn);
+    new_ax_listener = listener(ancestor(im, "axes"), "MarkedClean", update_fcn);
+    % Delete the axes MarkedClean listener if the image gets deleted.
+    addlistener(im, "ObjectBeingDestroyed", @(varargin) delete(new_ax_listener)); 
+
+    update_fcn();
 end
 
 function setImviewID(im)
@@ -309,35 +368,6 @@ function respondToPoolFigureVisibilityChange(~, event_data)
     else
         imvw.internal.log("Pool figure has become invisible.");
     end
-end
-
-function addHelpers(im, ax, options_p)
-    imview_id = getImviewID(im);
-    imvw.internal.addPixelGridGroup(ax, im, imview_id);
-    createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
-    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
-end
-
-function connectHelpers(im)
-    % Delete the pixel grid group when the image object gets deleted.
-    pixel_grid = imvw.internal.findPixelGrid(im);
-    if isgraphics(pixel_grid)
-        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(pixel_grid));
-    end
-
-    zdisp = imvw.internal.findZoomLevelDisplay(im);
-    if isgraphics(zdisp)
-        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
-    end    
-
-    interpolation_method = getappdata(im, "imview_interpolation_method");
-    update_fcn = @(~,~) updateImageDisplay(im, interpolation_method);  
-    addlistener(im, "MarkedClean", update_fcn);
-    new_ax_listener = listener(ancestor(im, "axes"), "MarkedClean", update_fcn);
-    % Delete the axes MarkedClean listener if the image gets deleted.
-    addlistener(im, "ObjectBeingDestroyed", @(varargin) delete(new_ax_listener)); 
-
-    update_fcn();
 end
 
 function updateImageDisplay(im, interpolation_mode)
@@ -794,4 +824,4 @@ function gray_limits_p = processGrayLimits(options,A)
     end
 end
 
-% Copyright 2024-2025 Steven L. Eddins
+% Copyright 2024-2026 Steven L. Eddins
