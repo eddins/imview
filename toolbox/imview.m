@@ -294,6 +294,65 @@ function connectHelpers(im)
     update_fcn();
 end
 
+%%%
+%%% Live Editor Embedded Figure Management
+%%%
+%%% This description is based on the results of my investigations in fall
+%%% 2025 and winter 2026.
+%%%
+%%% When graphics code is executed within the Live Editor, the graphics
+%%% objects get created in a normal figure that is invisible. After code in
+%%% an editor section finished executing, that figure is cloned into an
+%%% internal, embedded figure. That embedded figure is what you see in the
+%%% Live Editor.
+%%%
+%%% There are several tricky things to be aware of. First, if your code
+%%% gets object handles, such as a figure, axes, or image handle, the
+%%% handle will be for the normal, invisible figure, not the embedded
+%%% figure that you see in the Live Editor. As a consequence, if you use
+%%% those handles to wire up event handlers, you will not receive event
+%%% notifications resulting from interactions with the embedded figure.
+%%%
+%%% Second, the embedded figures get created asynchronously, sometime after
+%%% your code has finished executing. Therefore, wiring up event handlers
+%%% for the embedded figure cannot be done directly from your code while it
+%%% is executing in the Live Editor script, because the embedded figure
+%%% might not exist yet.
+%%%
+%%% Third, each normal figure might be cloned into multiple embedded
+%%% figures in the live script. That can happen when graphics object
+%%% properties are modified in a separate code section. This usually
+%%% results in an additional embedded figure clone being created for the
+%%% separate code section.
+%%%
+%%% Fourth, when the Live Editor starts up, it creates a pool of embedded
+%%% figures to be used and reused as necessary. This complicates the
+%%% possible implementation strategy of using event notifications from the
+%%% graphics root object to detect when embedded figures get created. Such
+%%% event notifications might not get fired because the embedded figures
+%%% have already been created before any IMVIEW code is executed.
+%%%
+%%% All of this complexity makes Live Editor support for IMVIEW challenging
+%%% to implement.
+%%%
+%%% Here are the most important implementation details:
+%%%
+%%% - Every image created by a call to IMVIEW has a unique identifier,
+%%%   called imview_id, stored in its application data. When the Live
+%%%   Editor clones a figure into an embedded figure, this identifier gets
+%%%   copied along.
+%%%
+%%% - If the Live Editor is running when IMVIEW is called, then IMVIEW
+%%%   looks for any pre-created embedded figures that are not yet being
+%%%   used. It installs listeners for these figures to detect when they
+%%%   become visible.
+%%%
+%%% - When any figure gets created, or when pre-created Live Editor figures
+%%%   go into use, they are searched to see if they contain any images
+%%%   created by IMVIEW. If they do contain such images, then the images
+%%%   and their containing axes are wired up to respond to interactive
+%%%   IMVIEW behaviors.
+%%% 
 function setImviewID(im)
     imview_id = imvw.internal.uuid;
     setappdata(im, "imview_id", imview_id);
@@ -304,14 +363,27 @@ function imview_id = getImviewID(im)
 end
 
 function prepareLiveEditorUse()
+    % If the Live Editor is running, find pre-created embedded internal
+    % figures and instrument them with listeners to detect when they go
+    % into use. Also, listen to figure creation notifications from the
+    % graphics root.
+
     imvw.internal.log("Preparing for Live Editor Use.");
     if imvw.internal.liveEditorRunning()
         instrumentLiveEditorFigurePool();
+
         r = groot;
         appdata_listener_name = "imview_groot_child_added_listener";
         imvw.internal.log("Live Editor is running.");
         if isempty(getappdata(r, appdata_listener_name))
             imvw.internal.log("Creating ChildAdded listener for graphics root.");
+
+            % When creating this listener, store it the figure's
+            % application data using an imview-specific name. That way, the
+            % listener will automatically be deactivated and destroyed when
+            % the figure is destroyed, and it will be possible to detect
+            % later that the listener has already been created.
+
             ell = listener(r, "ChildAdded", @respondToRootChildAdded);
             setappdata(r, appdata_listener_name, ell);
         else
@@ -323,30 +395,45 @@ function prepareLiveEditorUse()
 end
 
 function respondToRootChildAdded(~, event_data)
-    imvw.internal.log("Graphics root ChildAdded event. Child:");
-    imvw.internal.log(formattedDisplayText(event_data.Child));
+    % A figure has been created. See if it is an embedded Live Editor
+    % figure. If it is not, no action is needed.
     fig = event_data.Child;
-    if (fig.Tag == "EmbeddedFigure_Internal") && ~fig.Visible && isempty(fig.editorID)
-        instrumentLiveEditorFigurePool(fig);
+    if (fig.Tag == "EmbeddedFigure_Internal")
+        % If the figure is part of the Live Editor figure pool, then
+        % instrument it so that it can be detected when the figures goes
+        % into use.
+        if (~fig.Visible && isempty(fig.editorID))
+            % The embedded figure is part of the Live Editor figure pool.
+            % Instrument it so that it can be detected when the figure goes
+            % into use.
+            instrumentLiveEditorFigurePool(fig);
+        else
+            % The embedded figure is in use. If it contains any IMVIEW
+            % images, then wire up the interactive behaviors for those
+            % images.
+            ii = findobj(fig, "type", "image", "Tag", "imview");
+            for k = 1:length(ii)
+                connectHelpers(ii(k));
+            end
+        end
     end
 end
 
 function instrumentLiveEditorFigurePool(ff)
     if nargin < 1
-        imvw.internal.log("Getting live editor pool figures.");
         ff = imvw.internal.getLiveEditorFigurePool;
     end
-    imvw.internal.log(sprintf("Instrumenting %d live editor pool figures.", length(ff)));
     appdata_listener_name = "imview_figure_visibility_changed_listener";
     
     for k = 1:length(ff)
         if isempty(getappdata(ff(k), appdata_listener_name))
+            % Sign up for notification of when this figure becomes visible.
             ell = listener(ff(k), "Visible", "PostSet", ...
                 @respondToPoolFigureVisibilityChange);
             setappdata(ff(k), appdata_listener_name, ell);
-            imvw.internal.log("Added pool figure visibility change listener.");
         else
-            imvw.internal.log("Pool figure already has visibility change listener.");
+            % Pool figure already has visibility change listener. No
+            % further action needed.
         end
     end
 end
@@ -354,19 +441,21 @@ end
 function respondToPoolFigureVisibilityChange(~, event_data)
     fig = event_data.AffectedObject;
     if fig.Visible
-        imvw.internal.log("Pool figure has become visible.");
         if ~isempty(fig.editorID)
-            imvw.internal.log("Pool figure has been assigned editor ID: " + fig.editorID);
+            % The figure has become visible and has been assigned an editor
+            % ID, implying that it is now in use. Find any contained IMVIEW
+            % images and wire up their interactive behaviors.
             imm = findobj(fig, "type", "image", "Tag", "imview");
-            imvw.internal.log(sprintf("Activated pool figure has %d imview images.", length(imm)));
             for k = 1:length(imm)
                 connectHelpers(imm(k));
             end
         else
-            imvw.internal.log("Pool figure has no editor ID.");
+            % Although the figure has become visible, it has not been
+            % assigned an editor ID. It is not known how to handle this
+            % condition, so do nothing.
         end
     else
-        imvw.internal.log("Pool figure has become invisible.");
+        % Pool figure has become invisible. No further action needed here.
     end
 end
 
