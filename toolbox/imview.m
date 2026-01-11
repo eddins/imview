@@ -282,6 +282,7 @@ function connectHelpers(im)
     zdisp = imvw.internal.findZoomLevelDisplay(im);
     if isgraphics(zdisp)
         addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
+        addlistener(zdisp, "EditingChanged", @handleZoomLevelDisplayChange);
     end    
 
     interpolation_method = getappdata(im, "imview_interpolation_method");
