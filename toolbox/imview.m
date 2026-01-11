@@ -221,7 +221,7 @@ function out = imview(A,map,options)
             im.Interpolation = "bilinear";
     end
 
-    addInteractiveBehaviors(im, ax, options_p);
+    addDynamicBehaviors(im, ax, options_p);
 
     % Standard practice in high-level graphics functions is to return an
     % output argument only if requested.
@@ -231,9 +231,9 @@ function out = imview(A,map,options)
 end
 
 %%%
-%%% INTERACTIVE BEHAVIOR INITIALIZATION
+%%% DYNAMIC BEHAVIOR INITIALIZATION
 %%%
-%%% Interactive behaviors include:
+%%% Dynamic behaviors include:
 %%%
 %%%   - Changing the image interpolation method depending on the physical
 %%%     pixel size.
@@ -246,10 +246,10 @@ end
 %%%     the axes toolbar.
 %%%
 %%% Architecturally, the creation of the various graphics objects
-%%% associated with interactive behavior (pixel grid, text object, axes
+%%% associated with dynamic behavior (pixel grid, text object, axes
 %%% toolbar button) has been separated from wiring up those objects to
 %%% respond to various events. The separate steps are represented by the
-%%% two functions addHelpers and connectHelpers.
+%%% two functions addDynamicHelpers and connectDynamicHelpers.
 %%%
 %%% The steps are separated this way to facilitate Live Editor support. In
 %%% the live editor, the helper objects need to be created when IMVIEW is
@@ -260,19 +260,19 @@ end
 %%% figure.
 %%%
 
-function addInteractiveBehaviors(im, ax, options)
-    addHelpers(im, ax, options);
-    connectHelpers(im);
+function addDynamicBehaviors(im, ax, options)
+    addDynamicHelpers(im, ax, options);
+    connectDynamicHelpers(im);
 end
 
-function addHelpers(im, ax, options_p)
+function addDynamicHelpers(im, ax, options_p)
     imview_id = getImviewID(im);
     imvw.internal.addPixelGridGroup(ax, im, imview_id);
     createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
     addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
 end
 
-function connectHelpers(im)
+function connectDynamicHelpers(im)
     % Delete the pixel grid group when the image object gets deleted.
     pixel_grid = imvw.internal.findPixelGrid(im);
     if isgraphics(pixel_grid)
@@ -414,7 +414,7 @@ function respondToRootChildAdded(~, event_data)
             % images.
             ii = findobj(fig, "type", "image", "Tag", "imview");
             for k = 1:length(ii)
-                connectHelpers(ii(k));
+                connectDynamicHelpers(ii(k));
             end
         end
     end
@@ -448,7 +448,7 @@ function respondToPoolFigureVisibilityChange(~, event_data)
             % images and wire up their interactive behaviors.
             imm = findobj(fig, "type", "image", "Tag", "imview");
             for k = 1:length(imm)
-                connectHelpers(imm(k));
+                connectDynamicHelpers(imm(k));
             end
         else
             % Although the figure has become visible, it has not been
