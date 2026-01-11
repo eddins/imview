@@ -747,26 +747,12 @@ function handleZoomLevelToolbarValueChange(btn,event)
 end
 
 %%%
-%%% Utility functions for checking and processing function inputs
-%%%
-%%%     imageType
-%%%     processImageData
-%%%     verifyDependencies
-%%%     mFunctionExists
-%%%     mustBeValidXYData
-%%%     mustBeValidGrayLimits
-%%%     mustBeValidParentAxes
-%%%     processOptions
-%%%     processShowZoomLevel
-%%%     processAlphaData
-%%%     processParent
-%%%     processInterpolation
-%%%     processXData
-%%%     processYData
-%%%     processGrayLimits
+%%% FUNCTION SYNTAX AND ARGUMENT PROCESSING HELPER FUNCTIONS
 %%%     
 
 function type = imageType(A,map)
+    % Based on the size and type of A, as well as whether map is empty,
+    % infer the image type (truecolor, indexed, binary, grayscale).
     if ((ndims(A) == 3) && (size(A,3) == 3))
         type = "truecolor";
         if ~isempty(map)
@@ -785,6 +771,11 @@ function type = imageType(A,map)
 end
 
 function [A,map,alpha] = processImageData(A,map,alpha)
+    % Return image array, colormap, and alpha data in the form suitable for
+    % use with MATLAB graphics objects. If A has been passed in as a
+    % string, interpret the string as a filename or URL and try to read the
+    % image from it. If alpha contains uint8 or uint16 alpha data, scale
+    % and convert it to double.
     if ischar(A) || isstring(A)
         A = string(A);
         if ~exist(A,"file")
@@ -876,6 +867,7 @@ function alpha_data_p = processAlphaData(options)
 end
 
 function parent = processParent(options)
+    % If the caller has not specified a parent container, call newplot.
     if isfield(options, "Parent")
         parent = options.Parent;
     else
