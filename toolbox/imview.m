@@ -527,22 +527,8 @@ function respondToPoolFigureVisibilityChange(~, event_data)
     end
 end
 
-
-
 %%%
-%%% Utility functions for managing zoom level display
-%%%
-%%%     createZoomLevelDisplay
-%%%     handleZoomLevelDisplayClick
-%%%     handleZoomLevelDisplayChange
-%%%     zoomLevelFromString
-%%%     updateZoomLevelDisplay
-%%%     zoomLevelText
-%%%     findZoomLevelDisplay
-%%%     updateZoomLevelDisplayPosition
-%%%     showZoomLevelSetting
-%%%     addShowZoomLevelToolbarButton
-%%%     handleZoomLevelToolbarValueChange
+%%% ZOOM-LEVEL DISPLAY MANAGEMENT
 %%%
 
 function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
@@ -563,6 +549,8 @@ function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
 end
 
 function handleZoomLevelDisplayChange(t,~)
+    % A zoom-level display text object has been edited. First, find an
+    % image object with a matching imview_id.
     imview_id = getappdata(t, "imview_id");
     ax = ancestor(t, "axes");
     ii = findobj(ax, "type", "image", "Tag", "imview");
@@ -573,9 +561,15 @@ function handleZoomLevelDisplayChange(t,~)
             break
         end
     end
+
     if ~isgraphics(im)
+        % The original image associated with this zoom-level display text
+        % object has been deleted.
         t.String = "";
     else
+        % Respond to the user's change. If they have entered a valid zoom
+        % level, update the image display. Otherwise, reset the text field
+        % based on the current zoom level of the image.
         mag = zoomLevelFromString(t.String);
         if isempty(mag)
             % Invalid text field entry from user.
@@ -587,9 +581,13 @@ function handleZoomLevelDisplayChange(t,~)
     end
 end
 
-function mag = zoomLevelFromString(s)
-    s = replace(s, "%", "");
-    mag = sscanf(s, "%f");
+function mag = zoomLevelFromString(t)
+    % Get a valid numeric zoom level from text. First, strip out any
+    % percent characters.
+    t = replace(t, "%", "");
+
+    % Convert the text to one or more numbers using sscanf.
+    mag = sscanf(t, "%f");
     valid_mag = (numel(mag) >= 1) && ...
         (numel(mag) <= 2) && ...
         isreal(mag) && ...
@@ -597,11 +595,14 @@ function mag = zoomLevelFromString(s)
         all(mag > 0);
 
     if ~valid_mag
+        % Not a valid zoom magnification level. Return empty instead.
         mag = [];
     end
 end
 
 function updateZoomLevelDisplay(im)
+    % Update the text and the position of the zoom-level display based on
+    % the current settings of the image object and its containers.
     t = findZoomLevelDisplay(im);
     if isempty(t) || ~isgraphics(t)
         return
@@ -611,6 +612,9 @@ function updateZoomLevelDisplay(im)
 end
 
 function s = zoomLevelText(mag)
+    % Convert a magnification level to text. If the two zoom values
+    % (horizontal and vertical) are within 1.5 parts out of a hundred, just
+    % use a single value.
     if ~isscalar(mag)
         e = abs(mag(2) - mag(1)) / max(mag(1), mag(2));
         if e < 1.5e-2
@@ -635,6 +639,7 @@ function t = findZoomLevelDisplay(im)
 end
 
 function updateZoomLevelDisplayPosition(t,im)
+    % Place the zoom-level display at the bottom right of the image.
     ax = imageAxes(im);
     xdata = im.XData;
     xlim = ax.XLim;
@@ -655,6 +660,8 @@ function updateZoomLevelDisplayPosition(t,im)
 end
 
 function tf = showZoomLevelSetting
+    % Determine the current value of the imview.ShowZoomLevel setting.
+    % Create the setting if it does not already exist.
     s = settings;
     if ~hasGroup(s,"imview")
         addGroup(s,"imview");
@@ -674,16 +681,32 @@ end
 function addShowZoomLevelToolbarButton(ax, initial_value)
     tb_old = ax.Toolbar;
     if ~isempty(findobj(tb_old, "Tag", "ShowZoomLevelButton"))
+        % The axes toolbar already contains the show-zoom-level button.
+        % Nothing to do here.
         return
     end
 
     if isempty(tb_old)
+        % In an unfortunate quirk of the MATLAB graphics system, ax.Toolbar
+        % equals [] could really mean that there is no axes toolbar, or it
+        % could mean that the default axes toolbar is in place. Assume that
+        % the default axes toolbar is present. In another unfortunate
+        % quirk, additional buttons cannot be added to the default builtin
+        % axes toolbar. To work around this limitation, recreate the
+        % default axes toolbar using axtoolbar and the "default" option.
+        % New buttons can then be added.
         tb = axtoolbar(ax, "default");
     else
         btns = tb_old.Children;
         if isempty(btns)
+            % If the toolbar appears to have no children, that is another
+            % indication that it might really be the default builtin axes
+            % toolbar. As above, recreate the default axes toolbox using
+            % axtoolbar and the "default" option.
             tb = axtoolbar(ax, "default");
         else
+            % Create a new toolbar and add to it all the buttons from the
+            % old toolbar.
             tb = axtoolbar(ax);
             for k = 1:length(btns)
                 btns(k).Parent = tb;
@@ -691,6 +714,8 @@ function addShowZoomLevelToolbarButton(ax, initial_value)
         end
     end
 
+    % Create the show-zoom-level toolbar button. Set the appropriate
+    % tooltip based on the initial state of the button.
     if initial_value
         tooltip = "Hide zoom-level display";
     else
@@ -706,6 +731,9 @@ function addShowZoomLevelToolbarButton(ax, initial_value)
 end
 
 function handleZoomLevelToolbarValueChange(btn,event)
+    % Respond to a press of the show-zoom-level toolbar button. Set the
+    % visibility of the zoom-level display, as well as the toolbar button
+    % tooltip, appropriately.
     tb = btn.Parent;
     ax = tb.Parent;
     t = findobj(ax, "type", "text", "Tag", "imview");
