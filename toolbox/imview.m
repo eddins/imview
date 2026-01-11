@@ -231,6 +231,73 @@ function out = imview(A,map,options)
 end
 
 %%%
+%%% UPDATE IMAGE DISPLAY
+%%%
+%%% Respond to image zoom by keeping the zoom level display, the
+%%% interpolation method, and the pixel grid display in sync.
+%%%
+
+function updateImageDisplay(im, interpolation_mode)
+    if ~ishandle(im)
+        return
+    end
+    
+    if (interpolation_mode == "adaptive")
+        if ismatrix(im.CData) && strcmp(im.CDataMapping,'direct')
+            if ~strcmp(im.Interpolation,'nearest')
+                im.Interpolation = 'nearest';
+            end
+        else
+            if any(imvw.internal.getImagePixelExtentInches(im) >= 0.25)
+                if ~strcmp(im.Interpolation,'nearest')
+                    im.Interpolation = 'nearest';
+                end
+                setPixelGridVisibility(im,"on");
+            else
+                if ~strcmp(im.Interpolation,'bilinear')
+                    im.Interpolation = 'bilinear';
+                end
+                setPixelGridVisibility(im,"off");
+            end
+        end
+    end
+
+    ax = imageAxes(im);
+    if (ax.XLimMode == "auto") || (ax.YLimMode == "auto")
+        zoom_level = imvw.internal.getImageZoomLevel(im);
+        axes_center = imvw.internal.getAxesCenterXY(ax);
+        ax.XLimMode = "auto";
+        ax.YLimMode = "auto";
+        imvw.internal.setImageZoomLevel(zoom_level, im);
+        imvw.internal.setAxesCenterXY(axes_center, ax);
+    end
+
+    updateZoomLevelDisplay(im)
+end
+
+function setPixelGridVisibility(im,visible_state)
+    ax = imageAxes(im);
+    gg = findobj(ax, "type", "hggroup", "Tag", "imview");
+    pg_grp = [];
+    for k = 1:length(gg)
+        if getappdata(gg(k), "imview_id") == getappdata(im, "imview_id")
+            pg_grp = gg(k);
+            break
+        end
+    end
+    if (~isempty(pg_grp) && isgraphics(pg_grp))
+        pg_grp.Visible = visible_state;
+    end
+end
+
+function ax = imageAxes(im)
+    ax = ancestor(im, "axes");
+    if isempty(ax)
+        ax = ancestor(im, "uiaxes");
+    end    
+end
+
+%%%
 %%% DYNAMIC BEHAVIOR INITIALIZATION
 %%%
 %%% Dynamic behaviors include:
@@ -460,65 +527,7 @@ function respondToPoolFigureVisibilityChange(~, event_data)
     end
 end
 
-function updateImageDisplay(im, interpolation_mode)
-    if ~ishandle(im)
-        return
-    end
-    
-    if (interpolation_mode == "adaptive")
-        if ismatrix(im.CData) && strcmp(im.CDataMapping,'direct')
-            if ~strcmp(im.Interpolation,'nearest')
-                im.Interpolation = 'nearest';
-            end
-        else
-            if any(imvw.internal.getImagePixelExtentInches(im) >= 0.25)
-                if ~strcmp(im.Interpolation,'nearest')
-                    im.Interpolation = 'nearest';
-                end
-                setPixelGridVisibility(im,"on");
-            else
-                if ~strcmp(im.Interpolation,'bilinear')
-                    im.Interpolation = 'bilinear';
-                end
-                setPixelGridVisibility(im,"off");
-            end
-        end
-    end
 
-    ax = imageAxes(im);
-    if (ax.XLimMode == "auto") || (ax.YLimMode == "auto")
-        zoom_level = imvw.internal.getImageZoomLevel(im);
-        axes_center = imvw.internal.getAxesCenterXY(ax);
-        ax.XLimMode = "auto";
-        ax.YLimMode = "auto";
-        imvw.internal.setImageZoomLevel(zoom_level, im);
-        imvw.internal.setAxesCenterXY(axes_center, ax);
-    end
-
-    updateZoomLevelDisplay(im)
-end
-
-function setPixelGridVisibility(im,visible_state)
-    ax = imageAxes(im);
-    gg = findobj(ax, "type", "hggroup", "Tag", "imview");
-    pg_grp = [];
-    for k = 1:length(gg)
-        if getappdata(gg(k), "imview_id") == getappdata(im, "imview_id")
-            pg_grp = gg(k);
-            break
-        end
-    end
-    if (~isempty(pg_grp) && isgraphics(pg_grp))
-        pg_grp.Visible = visible_state;
-    end
-end
-
-function ax = imageAxes(im)
-    ax = ancestor(im, "axes");
-    if isempty(ax)
-        ax = ancestor(im, "uiaxes");
-    end    
-end
 
 %%%
 %%% Utility functions for managing zoom level display
