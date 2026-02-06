@@ -436,15 +436,12 @@ function prepareLiveEditorUse()
     % into use. Also, listen to figure creation notifications from the
     % graphics root.
 
-    imvw.internal.log("Preparing for Live Editor Use.");
     if imvw.internal.liveEditorRunning()
         instrumentLiveEditorFigurePool();
 
         r = groot;
         appdata_listener_name = "imview_groot_child_added_listener";
-        imvw.internal.log("Live Editor is running.");
         if isempty(getappdata(r, appdata_listener_name))
-            imvw.internal.log("Creating ChildAdded listener for graphics root.");
 
             % When creating this listener, store it the figure's
             % application data using an imview-specific name. That way, the
@@ -455,10 +452,10 @@ function prepareLiveEditorUse()
             ell = listener(r, "ChildAdded", @respondToRootChildAdded);
             setappdata(r, appdata_listener_name, ell);
         else
-            imvw.internal.log("Graphics Root already has imview ChildAdded listener.");
+            % Nothing to do here.
         end
     else
-        imvw.internal.log("Live Editor is not running.");
+        % Live Editor is not running. Nothing to do here.
     end
 end
 
