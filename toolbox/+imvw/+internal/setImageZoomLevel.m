@@ -41,8 +41,8 @@ function setImageZoomLevel(new_level,im)
 
     ax = ancestor(im,"axes");
 
-    isfit = isa(new_level,"imvw.internal.ZoomLevelOptions") && ...
-        (new_level == "fit");
+    isfit = (isstring(new_level) && (new_level == "fit")) || ...
+        (isa(new_level,"imvw.internal.ZoomLevelOptions") && (new_level == "fit"));
 
     if isfit
         fitImage(ax,im);

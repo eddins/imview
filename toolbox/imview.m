@@ -568,32 +568,42 @@ function handleZoomLevelDisplayChange(t,~)
         % level, update the image display. Otherwise, reset the text field
         % based on the current zoom level of the image.
         mag = zoomLevelFromString(t.String);
-        if isempty(mag)
-            % Invalid text field entry from user.
-            mag = getImageZoomLevel(im);
+        if isstring(mag) && (mag == "fit")
+            imvw.internal.setImageZoomLevel("fit", im);
         else
-            setImageZoomLevel(mag,im)
+            % Only change the zoom level if the user entered something
+            % valid.
+            if ~isempty(mag)
+                imvw.internal.setImageZoomLevel(mag,im)
+            end
         end
-        t.String = zoomLevelText(mag);
+
+        t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
     end
 end
 
 function mag = zoomLevelFromString(t)
     % Get a valid numeric zoom level from text. First, strip out any
     % percent characters.
+    t = string(t);
     t = replace(t, "%", "");
+    t = strip(t);
 
-    % Convert the text to one or more numbers using sscanf.
-    mag = sscanf(t, "%f");
-    valid_mag = (numel(mag) >= 1) && ...
-        (numel(mag) <= 2) && ...
-        isreal(mag) && ...
-        all(isfinite(mag)) && ...
-        all(mag > 0);
+    if (t == "fit")
+        mag = "fit";
+    else
+        % Convert the text to one or more numbers using sscanf.
+        mag = sscanf(t, "%f");
+        valid_mag = (numel(mag) >= 1) && ...
+            (numel(mag) <= 2) && ...
+            isreal(mag) && ...
+            all(isfinite(mag)) && ...
+            all(mag > 0);
 
-    if ~valid_mag
-        % Not a valid zoom magnification level. Return empty instead.
-        mag = [];
+        if ~valid_mag
+            % Not a valid zoom magnification level. Return empty instead.
+            mag = [];
+        end
     end
 end
 
