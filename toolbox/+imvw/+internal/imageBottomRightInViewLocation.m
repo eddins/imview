@@ -37,3 +37,5 @@ function ax = imageAxes(im)
         ax = ancestor(im, "uiaxes");
     end    
 end
+
+% Copyright 2025-2026 Steven L. Eddins

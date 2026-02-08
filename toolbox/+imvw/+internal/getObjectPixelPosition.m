@@ -40,3 +40,5 @@ function pos = getObjectPixelPosition(obj)
                 "Unknown object units: ""%s""", obj.Units)
     end
 end
+
+% Copyright 2025-2026 Steven L. Eddins

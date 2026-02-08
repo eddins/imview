@@ -32,3 +32,5 @@ function grp = pixelGridGroup(ax,xv,yv)
         LineStyle = "--",           ...
         AlignVertexCenters = "on")
 end
+
+% Copyright 2025-2026 Steven L. Eddins

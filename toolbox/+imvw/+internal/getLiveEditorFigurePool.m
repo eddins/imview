@@ -5,3 +5,5 @@ function f = getLiveEditorFigurePool
         "Tag", "EmbeddedFigure_Internal", ...
         "editorID", []);
 end
+
+% Copyright 2025-2026 Steven L. Eddins

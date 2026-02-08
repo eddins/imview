@@ -43,3 +43,5 @@ function [xv,yv] = pixelGridVertices(sz,xdata,ydata)
     yv = [yv1(:) ; yv2(:)];
 
 end
+
+% Copyright 2025-2026 Steven L. Eddins

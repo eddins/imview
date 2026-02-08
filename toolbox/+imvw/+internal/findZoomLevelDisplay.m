@@ -11,3 +11,5 @@ function grp = findZoomLevelDisplay(im)
         end
     end
 end
+
+% Copyright 2025-2026 Steven L. Eddins

@@ -4,4 +4,4 @@ classdef ZoomLevelOptions
     end
 end
 
-% Copyright (c) 2024-2025 Steven L. Eddins
+% Copyright (c) 2024-2026 Steven L. Eddins
