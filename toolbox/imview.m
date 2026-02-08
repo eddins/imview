@@ -242,24 +242,30 @@ function updateImageDisplay(im, interpolation_mode)
         return
     end
     
+    min_extent = min(imvw.internal.getImagePixelExtentInches(im));
+
     if (interpolation_mode == "adaptive")
         if ismatrix(im.CData) && strcmp(im.CDataMapping,'direct')
             if ~strcmp(im.Interpolation,'nearest')
                 im.Interpolation = 'nearest';
             end
         else
-            if any(imvw.internal.getImagePixelExtentInches(im) >= 0.25)
+            if (min_extent >= imvw.internal.adaptiveInterpolationThresholdSetting)
                 if ~strcmp(im.Interpolation,'nearest')
                     im.Interpolation = 'nearest';
                 end
-                setPixelGridVisibility(im,"on");
             else
                 if ~strcmp(im.Interpolation,'bilinear')
                     im.Interpolation = 'bilinear';
                 end
-                setPixelGridVisibility(im,"off");
             end
         end
+    end
+
+    if (min_extent >= imvw.internal.pixelGridThresholdSetting)
+        setPixelGridVisibility(im, "on");
+    else
+        setPixelGridVisibility(im, "off");
     end
 
     ax = imageAxes(im);
@@ -678,7 +684,7 @@ function tf = showZoomLevelSetting
     g = s.imview;
 
     if ~g.hasSetting("ShowZoomLevel")
-        g.addSetting("ShowZoomLevel", PersonalValue = true);
+        g.addSetting("ShowZoomLevel", FactoryValue = true);
     end
 
     zoom_setting = g.ShowZoomLevel;
