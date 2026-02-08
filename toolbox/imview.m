@@ -638,20 +638,21 @@ end
 function updateZoomLevelDisplayPosition(t,im)
     % Place the zoom-level display at the bottom right of the image.
     ax = imageAxes(im);
+    [pixel_extent_x, pixel_extent_y] = imvw.internal.pixelExtentDataSpace(im);
     xdata = im.XData;
     xlim = ax.XLim;
     if ax.XDir == "normal"
-        new_left = min(xdata(2), xlim(2));
+        new_left = min(xdata(2) + (pixel_extent_x / 2), xlim(2));
     else
-        new_left = max(xdata(1), xlim(1));
+        new_left = max(xdata(1) - (pixel_extent_x / 2), xlim(1));
     end
 
     ydata = im.YData;
     ylim = ax.YLim;
     if ax.YDir == "reverse"
-        new_bottom = min(ydata(2), ylim(2));
+        new_bottom = min(ydata(2) + (pixel_extent_y / 2), ylim(2));
     else
-        new_bottom = max(ydata(1), ylim(1));
+        new_bottom = max(ydata(1) - (pixel_extent_y / 2), ylim(1));
     end
     t.Position(1:2) = [new_left new_bottom];
 end
