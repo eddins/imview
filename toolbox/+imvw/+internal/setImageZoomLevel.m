@@ -77,6 +77,10 @@ function updateDataAspectRatio(new_level,im,ax)
     zx = new_level(1);
     zy = new_level(2);
     physical_aspect_ratio = zy / zx;
+    if abs(1 - physical_aspect_ratio) < 1e-8
+        % Force to be exactly 1
+        physical_aspect_ratio = 1;
+    end
 
     im_extent_xy = imvw.internal.imageUnclippedExtentXY(im);
     pixel_width_x = im_extent_xy(1) / size(im.CData,2);
@@ -85,14 +89,9 @@ function updateDataAspectRatio(new_level,im,ax)
 
     data_aspect_xy_ratio = physical_aspect_ratio / data_units_ratio;
 
-    dar = ax.DataAspectRatio;
-    new_dar = dar;
-    new_dar(1) = new_dar(2) * data_aspect_xy_ratio;
-    ax.DataAspectRatio = new_dar;
+    new_dar = [data_aspect_xy_ratio 1 1];
 
-    if ~isequal(dar,new_dar)
-        drawnow
-    end
+    ax.DataAspectRatio = new_dar;
 end
 
 function out = checkNumericLevel(in)
