@@ -67,7 +67,27 @@ classdef imview_test < imview_test_setup
                 Parent = test_case.Axes);
 
             test_case.verifySize(im.CData,[1 1 3]);
-        end     
+        end
+
+        function rgbImageWithColormapWarns(test_case)
+            A = reshape([1 1 1],[1 1 3]);
+            map = [1 1 1];
+
+            f = @() imview(A, map, Parent = test_case.Axes);
+            test_case.verifyWarning(f, "imview:MapIgnoredForTruecolorImage");
+        end
+
+        function noSuchFile(test_case)
+            f = @() imview("bogus_file.png", Parent = test_case.Axes);
+
+            test_case.verifyError(f, "imview:NoSuchFile");
+        end
+
+        function imageFileUnreadable(test_case)
+            f = @() imview("not_an_image_file.txt", Parent = test_case.Axes);
+
+            test_case.verifyError(f, "imview:FileReadFailed");
+        end
     end
 
 end
