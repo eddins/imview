@@ -32,6 +32,13 @@ classdef imview_gray_limits_test < imview_test_setup
             test_case.verifyEqual(test_case.Axes.CLim, [-3 10]);
         end
 
+        function equalGrayLimits(test_case)
+            f = @() imview([1 1 1], GrayLimits = [1 1], Parent = test_case.Axes);
+
+            % Just make sure it didn't error.
+            test_case.verifyTrue(true);
+        end
+
         function grayLimitsErrorCases(test_case)
             verifyError(test_case,@() imview(1, GrayLimits = [1 2 3]), ...
                 "imview:InvalidGrayLimits")

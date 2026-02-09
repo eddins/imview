@@ -11,5 +11,11 @@ classdef imview_parent_test < imview_test_setup
             test_case.verifyEqual(im1.Parent, ax1);
             test_case.verifyEqual(im2.Parent, ax2);
         end
+
+        function notAnAxes(test_case)
+            f = @() imview([0 .5 1], Parent = test_case.Figure);
+
+            test_case.verifyError(f, "imview:InvalidParent");
+        end
     end
 end
