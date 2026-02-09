@@ -487,6 +487,67 @@ function respondToRootChildAdded(~, event_data)
                 connectDynamicHelpers(ii(k));
             end
         end
+    elseif ~fig.Visible && (fig.Tag == "")
+        % A newly created figure that is not visible and that has an empty
+        % Tag might be a Live Editor internal figure whose Tag has not yet
+        % been set. Listen for changes to the Tag property so that it can
+        % be instrumented later.
+        addlistener(fig, "Tag", "PostSet", @(~, prop_event) respondToFigureTagChange(prop_event));
+    end
+end
+
+function respondToFigureTagChange(prop_event)
+    fig = prop_event.AffectedObject;
+    if (fig.Tag == "EmbeddedFigure_Internal")
+        if ~fig.Visible
+            % The embedded figure appears to be part of the Live Editor
+            % figure pool. Instrument it so that it can be detected when
+            % the figure goes into use.
+            instrumentLiveEditorFigurePool(fig);
+        else
+            try 
+                has_editor_id = ~isempty(fig.editorID); 
+            catch
+                has_editor_id = false;
+            end
+            if has_editor_id
+                % The embedded figure appears to be in use. If it contains any
+                % IMVIEW images, then wire up the interactive behaviors for
+                % those images.
+                ii = findobj(fig, "type", "image", "Tag", "imview");
+                fprintf("Number of IMVIEW images found: %d\n", length(ii));
+                for k = 1:length(ii)
+                    connectDynamicHelpers(ii(k));
+                end
+            else
+                % The embedded figure appears to be coming into use but is
+                % not quite ready.
+                t = timer(TimerFcn = @(t,~) checkEmbeddedFigureReadiness(t,fig), ...
+                    TasksToExecute = 10, ...
+                    ExecutionMode = "fixedDelay", ...
+                    Period = 0.2);
+                setappdata(fig, "imview_check_embedded_figure_timer", t);
+                t.start();
+            end
+        end
+    end
+end
+
+function checkEmbeddedFigureReadiness(t, fig)
+    try
+        has_editor_id = ~isempty(fig.editorID);
+    catch
+        has_editor_id = false;
+    end
+
+    if has_editor_id
+        % The embedded figure appears to be ready. Stop the timer and look
+        % for IMVIEW images.
+        stop(t);
+        ii = findobj(fig, "type", "image", "Tag", "imview");
+        for k = 1:length(ii)
+            connectDynamicHelpers(ii(k));
+        end
     end
 end
 
