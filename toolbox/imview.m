@@ -582,9 +582,14 @@ function respondToPoolFigureVisibilityChange(~, event_data)
                 connectDynamicHelpers(imm(k));
             end
         else
-            % Although the figure has become visible, it has not been
-            % assigned an editor ID. It is not known how to handle this
-            % condition, so do nothing.
+            % The embedded figure appears to be coming into use but is
+            % not quite ready.
+            t = timer(TimerFcn = @(t,~) checkEmbeddedFigureReadiness(t,fig), ...
+                TasksToExecute = 10, ...
+                ExecutionMode = "fixedDelay", ...
+                Period = 0.2);
+            setappdata(fig, "imview_check_embedded_figure_timer", t);
+            t.start();
         end
     else
         % Pool figure has become invisible. No further action needed here.
