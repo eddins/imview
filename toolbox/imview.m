@@ -750,7 +750,7 @@ function tf = showZoomLevelSetting
     g = s.imview;
 
     if ~g.hasSetting("ShowZoomLevel")
-        g.addSetting("ShowZoomLevel", FactoryValue = true);
+        g.addSetting("ShowZoomLevel", PersonalValue = true);
     end
 
     zoom_setting = g.ShowZoomLevel;
@@ -916,6 +916,13 @@ function mustBeValidParentAxes(ax)
         id = "imview:InvalidParent";
         message = "Parent must be an Axes or UIAxes object.";
         error(id,message)
+    end
+end
+
+function mustBeMatrix(A)
+    if ~ismatrix(A)
+        throwAsCaller(MException("imview:mustBeMatrix", ...
+            "Input value must be a matrix."));
     end
 end
 
