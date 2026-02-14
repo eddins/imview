@@ -161,6 +161,8 @@ function out = imview(A,map,options)
         options.SpatialReference (1,1) imref2d
     end
 
+    checkMATLABVersion();
+
     prepareLiveEditorUse();
 
     % If image data, A, has been passed in as a filename or URL, then get
@@ -1027,6 +1029,24 @@ function gray_limits_p = processGrayLimits(options,A)
     else
         % Default to "typerange"
         gray_limits_p = getrangefromclass(A);
+    end
+end
+
+function checkMATLABVersion
+    good_version = true;
+    try 
+        if isMATLABReleaseOlderThan("R2022b")
+            % IMVIEW needs the builtin function tightPosition, which was
+            % introduced in R2022b.
+            good_version = false;
+        end
+    catch
+        good_version = false;
+    end
+    
+    if ~good_version
+        throwAsCaller(MException("imview:OldMATLABRelease", ...
+            "MATLAB R2022b or later is required."));
     end
 end
 
