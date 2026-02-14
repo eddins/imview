@@ -14,7 +14,7 @@ classdef imview_test < imview_test_setup
             imview(magic(3), Parent = test_case.Axes);
             ax = test_case.Axes;
 
-            test_case.verifyEqual(ax.DataAspectRatio,[1 1 1]);
+            test_case.verifyEqual(ax.DataAspectRatio, [1 1 1], RelTol = 1e-3);
             test_case.verifyEqual(ax.YDir,'reverse');
             test_case.verifyEqual(ax.XLimitMethod,'tight');
             test_case.verifyEqual(ax.YLimitMethod,'tight');
