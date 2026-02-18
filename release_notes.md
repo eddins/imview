@@ -1,5 +1,19 @@
 # IMVIEW Release Notes
 
+## Version 3.0.0
+
+- Supports use within the Live Editor.
+- Required version of MATLAB is R2022b.
+- Zooming in on "skinny" tall or wide images will now use all of the available space in the plotting region.
+- For the auto image interpolation method, interpolation switches to nearest when pixels are about 1/16 inch wide, instead of 1/4 inch.
+- Pixel grid is shown when pixels are about 3/8 inch wide, instead of 1/4 inch.
+- New settings are available:
+    - `AdaptiveInterpolationThreshold`
+    - `PixelGridThreshold`
+- The zoom-level display percentage is now rounded appropriately to avoid presenting a misleading precision.
+- The [Pixel Grid](https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid) and [Image Zoom Level and Pan Utilities](https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities) packages are no longer required.
+- MATLAB version R2022b or later is now required.
+
 ## Version 2.0.5
 
 There are no code or functional changes in this release. It is only for resolving an issue with the File Exchange connection.
