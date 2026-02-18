@@ -15,14 +15,11 @@ figure (as returned by the function `newplot`). A figure and axes will be
 created if they do not exist.
 
 - `imview` displays the image using bilinear interpolation and
-antialiasing, unless individual pixels are larger than about 0.25
-inches. In that case, the interpolation switches automatically to
-nearest neighbor, and a pixel grid is shown. The function `imshow` uses
-nearest neighbor interpolation by default.
+antialiasing, unless individual pixels are larger than about 1/16 inch. In that case, the interpolation switches automatically to nearest neighbor. The function `imshow` uses nearest neighbor interpolation by default. When individual pixels get even larger, more than about 3/8 inch, a pixel grid is shown.
 
 - `imview` displays the zoom level (as a percentage) at the lower
 right of the image. The zoom level can be changed directly by clicking
-on the zoom level display and editing it. The zoom level is displayed
+on the zoom level display and editing it. The zoom level can be hidden and shown using an axes interaction toolbar button. The zoom level is displayed
 by default, but you can override that using the `ShowZoomLevel` argument.
 You can also override it by changing a persistent setting: `s = settings; s.imview.ShowZoomLevel.PersonalValue = true;`
 
@@ -33,6 +30,8 @@ enclose the data contained by the axes, including the image and
 anything else that might also be plotted in the same axes. Also unlike
 `imshow`, the axes limits will continue to automatically adjust to
 additional data being plotted there.
+
+- When displaying a "skinny" wide or "skinny" tall image and zooming in, the zoomed-in image will expand to fill the entire plotting region. When using `imshow`, the zoomed-in region is unnecessarily constrained to lie within the original image extent.
 
 - When displaying an indexed image, `imview` sets the colormap of the
 axes instead of the figure.
@@ -50,10 +49,7 @@ zoom level, as `InitialMagnification` does for `imshow`. Instead, call
  
 ## Prerequisites
  
-The function `imview` requires the following add-ons that are available from the MATLAB File Exchange:
- 
-- [Pixel Grid](https://www.mathworks.com/matlabcentral/fileexchange/71622-pixel-grid) 
-- [Image Zoom Level and Pan Utilities](https://www.mathworks.com/matlabcentral/fileexchange/167316-image-zoom-level-and-pan-utilities)
+The function `imview` requires MATLAB version R2022b or later.
 
 ## Installation
 
