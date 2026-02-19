@@ -144,7 +144,7 @@
 %   the background color contained in the file, so the appearance may be
 %   different from the PNG creator's intent.
 %
-%   See also imshow, image, pixelgrid, setImageZoomLevel, zoomImage
+%   See also imshow, image, pixelgrid
 
 function out = imview(A,map,options)
     arguments
