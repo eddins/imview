@@ -10,7 +10,7 @@ classdef imview_helper_object_deletion_test < imview_test_setup
 
         function zoomLevelDisplayDeletion(test_case)
             im = imview([0 0.5 1], Parent = test_case.Axes);
-            zoom_level_display = findobj(ancestor(im, "axes"), "type", "text", ...
+            zoom_level_display = findobj(ancestor(im, "figure"), "type", "uieditfield", ...
                 "Tag", "imview");
 
             delete(im);
