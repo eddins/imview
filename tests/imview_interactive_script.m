@@ -47,24 +47,12 @@ colorbar
 %[text] Display an image so that each pixel is 0.001 x 0.001 in the *x-y* domain. Zoom into the center of the image. Turn the axes display on so that the x and y tick labels are visible.
 ref = imref2d(size(C),0.001,0.001);
 imview(C, SpatialReference = ref)
-setImageZoomLevel(50)
+axis([0.4 1.4 0.25 0.85])
 axis on
 %[text] 
 %%
 %[text] %[text:anchor:H_3bbd] ## Display Image with Visible Axes
 imview(C)
-axis on
-box on
-%%
-%[text] %[text:anchor:H_60b8] ## Display Image and Plot New Data
-%[text] Unlike `imshow`, the function `imview` does not prevent the axes object from automatically readjusting its limits to respond to additional plotted data. The axes does, however, continue to maintain a data aspect ratio of `[1 1 1]`.
-imview(C)
-hold on
-rectangle(Position = [1 1 2000 2000],...
-    Curvature = [1 1],...
-    EdgeColor = "red",...
-    LineWidth = 3);
-hold off
 axis on
 box on
 %%
