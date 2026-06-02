@@ -23,14 +23,6 @@ on the zoom level display and editing it. The zoom level can be hidden and shown
 by default, but you can override that using the `ShowZoomLevel` argument.
 You can also override it by changing a persistent setting: `s = settings; s.imview.ShowZoomLevel.PersonalValue = true;`
 
-- Unlike `imshow`, `imview` does not explicitly set the axes `XLim` and `YLim`
-properties. Instead, it sets the `XLimitMethod` and `YLimitMethod`
-properties to `"tight"`. With this choice, the axes limits will tightly
-enclose the data contained by the axes, including the image and
-anything else that might also be plotted in the same axes. Also unlike
-`imshow`, the axes limits will continue to automatically adjust to
-additional data being plotted there.
-
 - When displaying a "skinny" wide or "skinny" tall image and zooming in, the zoomed-in image will expand to fill the entire plotting region. When using `imshow`, the zoomed-in region is unnecessarily constrained to lie within the original image extent.
 
 - When displaying an indexed image, `imview` sets the colormap of the
