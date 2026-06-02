@@ -116,14 +116,6 @@
 %       s = settings;
 %       s.imview.ShowZoomLevel.PersonalValue = true;
 %
-%   - Unlike imshow, IMVIEW does not explicitly set the axes XLim and YLim
-%   properties. Instead, it sets the XLimitMethod and YLimitMethod
-%   properties to "tight". With this choice, the axes limits will tightly
-%   enclose the data contained by the axes, including the image and
-%   anything else that might also be plotted in the same axes. Also unlike
-%   imshow, the axes limits will continue to automatically adjust to
-%   additional data being plotted there.
-%
 %   - When displaying an indexed image, IMVIEW sets the colormap of the
 %   axes instead of the figure.
 %
@@ -183,6 +175,7 @@ function out = imview(A,map,options)
         AlphaData = options_p.AlphaData, ...
         Tag = "imview");
     setappdata(im, "imview_interpolation_method", options_p.Interpolation);
+    setappdata(im, "imview_initial_show_zoom_level", options_p.ShowZoomLevel);
 
     im.XData = options_p.XData;
     im.YData = options_p.YData;
@@ -343,8 +336,14 @@ end
 function addDynamicHelpers(im, ax, options_p)
     imview_id = getImviewID(im);
     imvw.internal.addPixelGridGroup(ax, im, imview_id);
-    createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
-    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel);    
+    % createZoomLevelDisplay(im, imview_id, options_p.ShowZoomLevel);
+    addShowZoomLevelToolbarButton(ax, options_p.ShowZoomLevel); 
+
+    % One might expect to see createZoomLevelDisplay() here as well. But it
+    % has been moved to connectDynamicHelpers(). When using imview within
+    % the Live Editor, deferring its creation avoids the heuristic that
+    % prevents a figure containing a uieditfield from being embedded in the
+    % editor.
 end
 
 function connectDynamicHelpers(im)
@@ -354,11 +353,28 @@ function connectDynamicHelpers(im)
         addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(pixel_grid));
     end
 
-    zdisp = imvw.internal.findZoomLevelDisplay(im);
-    if isgraphics(zdisp)
-        addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
-        addlistener(zdisp, "EditingChanged", @handleZoomLevelDisplayChange);
-    end    
+    imview_id = getImviewID(im);
+    initial_show_zoom_level = getappdata(im, "imview_initial_show_zoom_level");
+
+    % The call to createZoomLevelDisplay() is here, instead of in
+    % addDynamicHelpers(), to avoid the heuristic that prevents a figure
+    % containing a uieditfield from being embedded in the Live Editor. If
+    % the Live Editor is running, but the figure tag doesn't indicate that
+    % it is an embedded figure, then don't create the zoom level display.
+    % This is to work around a Live Editor heuristic that prevents a figure
+    % containing a uieditfield from being embedded in the editor.
+    fig = ancestor(im, "figure");
+    if imvw.internal.liveEditorRunning && (fig.Tag ~= "EmbeddedFigure_Internal")
+        % Skip. Nothing to do here.
+    else
+        createZoomLevelDisplay(im, imview_id, initial_show_zoom_level);
+
+        zdisp = findZoomLevelDisplay(im);
+        if isgraphics(zdisp)
+            addlistener(im, "ObjectBeingDestroyed", @(~,~) delete(zdisp));
+            addlistener(zdisp, "ValueChanged", @handleZoomLevelDisplayChange);
+        end
+    end
 
     interpolation_method = getappdata(im, "imview_interpolation_method");
     update_fcn = @(~,~) updateImageDisplay(im, interpolation_method);  
@@ -408,6 +424,9 @@ end
 %%% event notifications might not get fired because the embedded figures
 %%% have already been created before any IMVIEW code is executed.
 %%%
+%%% Fifth, the Live Editor uses a heuristic that prevents figures
+%%% containing a uieditfield from embedded within the editor.
+%%%
 %%% All of this complexity makes Live Editor support for IMVIEW challenging
 %%% to implement.
 %%%
@@ -428,6 +447,11 @@ end
 %%%   created by IMVIEW. If they do contain such images, then the images
 %%%   and their containing axes are wired up to respond to interactive
 %%%   IMVIEW behaviors.
+%%%
+%%% - To avoid the heuristic that prevents figures containing uieditfields
+%%%   from being embedded into the Live Editor, defer creation of the zoom
+%%%   level display field until after the figure has been cloned into an
+%%%   embedded figure in the editor.
 %%% 
 function setImviewID(im)
     imview_id = imvw.internal.uuid;
@@ -517,7 +541,6 @@ function respondToFigureTagChange(prop_event)
                 % IMVIEW images, then wire up the interactive behaviors for
                 % those images.
                 ii = findobj(fig, "type", "image", "Tag", "imview");
-                fprintf("Number of IMVIEW images found: %d\n", length(ii));
                 for k = 1:length(ii)
                     connectDynamicHelpers(ii(k));
                 end
@@ -602,29 +625,30 @@ end
 %%% ZOOM-LEVEL DISPLAY MANAGEMENT
 %%%
 
-function t = createZoomLevelDisplay(im, imview_id, show_zoom_level)
-    t = text(50, 50, "", ...
-         BackgroundColor = uint8([240 240 240]), ...
-         Color = "black", ...
-         EdgeColor = uint8([200 200 200]), ...
-         FontSize = 8, ...
-         HorizontalAlignment = "right", ...
-         VerticalAlignment = "bottom", ...
-         Margin = 1, ...
-         Visible = show_zoom_level, ...
-         Tag = "imview", ...
-         Interactions = editInteraction, ...
-         Parent = imageAxes(im));
-    setappdata(t, "imview_id", imview_id);
-    addlistener(t, "EditingChanged", @handleZoomLevelDisplayChange);
+function ef = createZoomLevelDisplay(im, imview_id, show_zoom_level)
+    ef = uieditfield(ancestor(im,"figure"),"text", ...
+        BackgroundColor = [240 240 240]/255, ...
+        FontColor = "black", ...
+        FontSize = 10, ...
+        HorizontalAlignment = "right", ...
+        Visible = show_zoom_level, ...
+        Tag = "imview");
+    ef.Position(3) = 50;
+
+    setappdata(ef,"imview_id", imview_id);
+    setappdata(im,"imview_zoom_level_display", ef);
+
+    addlistener(im,"ObjectBeingDestroyed",@(varargin) delete(ef));
+
+    addlistener(ef,"ValueChanged", @(varargin) handleZoomLevelDisplayChange(ef,im));
 end
 
 function handleZoomLevelDisplayChange(t,~)
     % A zoom-level display text object has been edited. First, find an
     % image object with a matching imview_id.
     imview_id = getappdata(t, "imview_id");
-    ax = ancestor(t, "axes");
-    ii = findobj(ax, "type", "image", "Tag", "imview");
+    fig = ancestor(t, "figure");
+    ii = findobj(fig, "type", "image", "Tag", "imview");
     im = [];
     for k = 1:length(ii)
         if getappdata(ii(k), "imview_id") == imview_id
@@ -636,12 +660,12 @@ function handleZoomLevelDisplayChange(t,~)
     if ~isgraphics(im)
         % The original image associated with this zoom-level display text
         % object has been deleted.
-        t.String = "";
+        t.Value = "";
     else
         % Respond to the user's change. If they have entered a valid zoom
         % level, update the image display. Otherwise, reset the text field
         % based on the current zoom level of the image.
-        mag = zoomLevelFromString(t.String);
+        mag = zoomLevelFromString(t.Value);
         if isstring(mag) && (mag == "fit")
             imvw.internal.setImageZoomLevel("fit", im);
         else
@@ -652,7 +676,7 @@ function handleZoomLevelDisplayChange(t,~)
             end
         end
 
-        t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
+        t.Value = zoomLevelText(imvw.internal.getImageZoomLevel(im));
     end
 end
 
@@ -689,7 +713,7 @@ function updateZoomLevelDisplay(im)
         return
     end
     updateZoomLevelDisplayPosition(t,im);
-    t.String = zoomLevelText(imvw.internal.getImageZoomLevel(im));
+    t.Value = zoomLevelText(imvw.internal.getImageZoomLevel(im));
 end
 
 function s = zoomLevelText(mag)
@@ -707,37 +731,17 @@ function s = zoomLevelText(mag)
 end
 
 function t = findZoomLevelDisplay(im)
-    ax = imageAxes(im);
-    imview_id = getappdata(im, "imview_id");
-    tt = findobj(ax, "type", "text", "Tag", "imview");
-    t = [];
-    for k = 1:length(tt)
-        if getappdata(tt(k), "imview_id") == imview_id
-            t = tt(k);
-            break
-        end
-    end
+    t = getappdata(im, "imview_zoom_level_display");
 end
 
 function updateZoomLevelDisplayPosition(t,im)
-    % Place the zoom-level display at the bottom right of the image.
-    ax = imageAxes(im);
-    [pixel_extent_x, pixel_extent_y] = imvw.internal.pixelExtentDataSpace(im);
-    xdata = im.XData;
-    xlim = ax.XLim;
-    if ax.XDir == "normal"
-        new_left = min(xdata(2) + (pixel_extent_x / 2), xlim(2));
-    else
-        new_left = max(xdata(1) - (pixel_extent_x / 2), xlim(1));
-    end
+    [right, new_bottom] = imvw.internal.imageBottomRightInViewLocation(im);
+    new_left = right - t.Position(3);
+    
+    % Positioning tweak. Helps on the Mac. Other platforms unknown.
+    new_left = new_left + 1;
+    new_bottom = new_bottom + 1;
 
-    ydata = im.YData;
-    ylim = ax.YLim;
-    if ax.YDir == "reverse"
-        new_bottom = min(ydata(2) + (pixel_extent_y / 2), ylim(2));
-    else
-        new_bottom = max(ydata(1) - (pixel_extent_y / 2), ylim(1));
-    end
     t.Position(1:2) = [new_left new_bottom];
 end
 
@@ -818,7 +822,7 @@ function handleZoomLevelToolbarValueChange(btn,event)
     % tooltip, appropriately.
     tb = btn.Parent;
     ax = tb.Parent;
-    t = findobj(ax, "type", "text", "Tag", "imview");
+    t = findobj(ax, "type", "uieditfield", "Tag", "imview");
     set(t, "Visible", event.Value);
 
     if event.Value
