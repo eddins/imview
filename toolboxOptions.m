@@ -65,7 +65,7 @@ function opts = toolboxOptions
 
     platforms.Win64        = true;
     platforms.Glnxa64      = true;
-    platforms.Maci64       = true;
+    platforms.Mac          = true;
     platforms.MatlabOnline = true;
     opts.SupportedPlatforms = platforms; 
 
