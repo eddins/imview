@@ -1,5 +1,9 @@
 # IMVIEW Release Notes
 
+## Version 4.0.1
+
+- Corrected File Exchange link in the README file.
+
 ## Version 4.0.0
 
 - MATLAB R2026a or later is now required. **Note**: MATLAB R2026a or later is required because that is the first release in which Image Processing Toolbox does not have a placeholder do-nothing function with the conflicting name `imview`. If this package is installed in an earlier release, R2022b or later, it can be made to work by manually modifying the [MATLAB search path](https://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html) to place toolbox/imview above MathWorks product folders.
