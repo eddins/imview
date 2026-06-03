@@ -19,7 +19,7 @@ antialiasing, unless individual pixels are larger than about 1/16 inch. In that 
 
 - `imview` displays the zoom level (as a percentage) at the lower
 right of the image. The zoom level can be changed directly by clicking
-on the zoom level display and editing it. The zoom level can be hidden and shown using an axes interaction toolbar button. The zoom level is displayed
+on the zoom level display and editing it. Set a new zoom level by entering it as a percentage, or by entering "fit" to make the entire image visible. The zoom level can be hidden and shown using an axes interaction toolbar button. The zoom level is displayed
 by default, but you can override that using the `ShowZoomLevel` argument.
 You can also override it by changing a persistent setting: `s = settings; s.imview.ShowZoomLevel.PersonalValue = true;`
 
@@ -41,25 +41,21 @@ zoom level, as `InitialMagnification` does for `imshow`. Instead, call
  
 ## Prerequisites
  
-The function `imview` requires MATLAB version R2022b or later.
+The function `imview` requires MATLAB version R2026a or later.
+
+**Note**: The minimum release is set to R2026a because that is the first release in which Image Processing Toolbox does not have a placeholder do-nothing function with the conflicting name `imview`.
+
+If IMVIEW Image Display Function is installed in an earlier release, R2022b or later, it will likely work once the MATLAB search path is manually modified to place toolbox/imview above MathWorks product folders. See the [MATLAB search path documentation](https://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html) for details on this procedure.
 
 ## Installation
 
 Download the `.mltbx` file from the [GitHub repository releases area](https://github.com/eddins/imview/releases/) or from the [File Exchange](https://www.mathworks.com/matlabcentral/fileexchange/placeholder). Double-click on the downloaded file to automatically and run the MATLAB add-on installer. This will copy the files to your MATLAB add-ons area and add the appropriate folder to your MATLAB search path.
 
-After installation, this imview version may be shadowed by a placeholder function in Image Processing Toolbox with the same name. That function only issues an error message. It is a remnant of a general image display tool that existed in the product about 20 years ago. To fix this installation issue:
-
-1. Click "Set Path" in the MATLAB toolstrip. 
-1. Find the path entry for the IMVIEW add-on; it may be near the bottom of the long list. 
-1. Right-click on the path entry and select "Move to top." 
-1. Check the box that says "Save path for future sessions."
-1. Click "Apply."
-
 Later, you can use the [MATLAB Add-On Manager](https://www.mathworks.com/help/matlab/matlab_env/get-add-ons.html) to uninstall.
 
 ## Getting Started
 
-See the [Getting Started](https://viewer.mathworks.com/addons/177319/3.0.0/files/ImviewGettingStarted.mlx) script for more information.
+See the Getting Started script (toolbox/ImviewGettingStarted.mlx) script for more information.
 
 ## Image Credits
 
@@ -91,4 +87,4 @@ Rights: No known restrictions on publication.
 
 1-month rainfall for December 2024, 0.5 degree resolution, IMERG program, downloaded from https://neo.gsfc.nasa.gov/view.php?datasetId=GPM_3IMERGM on 25-Jan-2025.
 
-Copyright &copy; 2024 Steven L. Eddins
+Copyright &copy; 2024-2026 Steven L. Eddins
