@@ -1,5 +1,12 @@
 # IMVIEW Release Notes
 
+## Version 4.0.0
+
+- MATLAB R2026a or later is now required. **Note**: MATLAB R2026a or later is required because that is the first release in which Image Processing Toolbox does not have a placeholder do-nothing function with the conflicting name `imview`. If this package is installed in an earlier release, R2022b or later, it can be made to work by manually modifying the [MATLAB search path](https://www.mathworks.com/help/matlab/matlab_env/what-is-the-matlab-search-path.html) to place toolbox/imview above MathWorks product folders.
+- Supports typing "fit" in the zoom-level display field to show all of the image in the axes.
+- The zoom-level display no longer moves around in response to interactive zooming and panning using a scroll wheel or track. Uses a matlab.ui.control.EditField object instead of a graphics text object for the zoom-level display. 
+- Axes limits no longer automatically change to accommodate the extent of additional graphics objects plotted into the axes. Code in previous releases that attempted to make this work was not reliable. To change the limits after the image and other graphics objects have been plotted, use [`axis auto`](https://www.mathworks.com/help/matlab/ref/axis.html).
+
 ## Version 3.0.0
 
 - Supports use within the Live Editor.
