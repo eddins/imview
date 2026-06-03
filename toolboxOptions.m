@@ -16,7 +16,7 @@ function opts = toolboxOptions
     % when you add functionality in a backward compatible manner. Increment
     % the PATCH version when you make backward compatible bug fixes.
     
-    opts.ToolboxVersion = "3.0.1";
+    opts.ToolboxVersion = "4.0.0";
 
     % Folders to add to MATLAB path during toolbox installation, specified
     % as a string vector. When specifying ToolboxMatlabPath, include the
@@ -51,7 +51,15 @@ function opts = toolboxOptions
     % If there is no minimum restriction, specify MinimumMatlabRelease as
     % empty ("").
 
-    opts.MinimumMatlabRelease = "R2022b";
+    % The minimum release is set to R2026a because that is the first
+    % release in which Image Processing Toolbox does not have a placeholder
+    % do-nothing function with the conflicting name imview.
+    %
+    % If IMVIEW Image Display Function is installed in an earlier release,
+    % R2022b or later, it will likely work once the MATLAB search path is
+    % manually modified to place toolbox/imview above MathWorks product
+    % folders.
+    opts.MinimumMatlabRelease = "R2026a";
 
     % Supported platforms
 
